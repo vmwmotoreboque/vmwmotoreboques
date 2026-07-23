@@ -1,0 +1,1326 @@
+/*==================================================
+VMW MOTO-REBOQUES
+STYLE.CSS
+==================================================*/
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+
+    font-family:'Poppins',sans-serif;
+
+    background:#ffffff;
+
+    color:#222;
+
+    overflow-x:hidden;
+
+}
+
+img{
+
+    max-width:100%;
+
+    display:block;
+
+}
+
+a{
+
+    text-decoration:none;
+
+}
+
+ul{
+
+    list-style:none;
+
+}
+
+.container{
+
+    width:90%;
+
+    max-width:1300px;
+
+    margin:auto;
+
+}
+
+/*==========================================
+CORES
+==========================================*/
+
+:root{
+
+    --vermelho:#d60000;
+
+    --vermelho2:#ff1d25;
+
+    --preto:#1d1d1d;
+
+    --cinza:#666;
+
+    --branco:#ffffff;
+
+    --cinzaClaro:#f4f4f4;
+
+    --verde:#25D366;
+
+}
+
+/*==========================================
+HEADER
+==========================================*/
+
+.header{
+
+    position:fixed;
+
+    top:0;
+
+    left:0;
+
+    width:100%;
+
+    height:120px;
+
+    background:#fff;
+
+    z-index:9999;
+
+    box-shadow:0 3px 15px rgba(0,0,0,.08);
+
+}
+
+.header .container{
+
+    height:120px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+}
+
+.logo{
+
+    width:170px;
+
+    flex-shrink:0;
+
+}
+
+.logo img{
+
+    width:100%;
+
+    height:auto;
+
+    display:block;
+
+}
+
+.menu ul{
+
+    display:flex;
+
+    gap:35px;
+
+}
+
+.menu a{
+
+    color:#222;
+
+    font-weight:600;
+
+    transition:.3s;
+
+}
+
+.menu a:hover{
+
+    color:var(--vermelho);
+
+}
+
+.btn-header{
+
+    background:var(--verde);
+
+    color:#fff;
+
+    padding:14px 24px;
+
+    border-radius:10px;
+
+    font-weight:600;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+}
+
+.btn-header:hover{
+
+    transform:translateY(-2px);
+
+}
+
+/*==========================================
+HERO
+==========================================*/
+
+.hero{
+
+    padding-top:150px;
+
+    padding-bottom:80px;
+
+    background:#ffffff;
+
+}
+
+.hero-grid{
+
+    display:grid;
+
+    grid-template-columns:1fr 1fr;
+
+    align-items:center;
+
+    gap:60px;
+
+}
+
+.hero-topo{
+
+    display:inline-block;
+
+    background:#ffe8e8;
+
+    color:var(--vermelho);
+
+    padding:8px 18px;
+
+    border-radius:40px;
+
+    font-weight:700;
+
+    margin-bottom:25px;
+
+}
+
+.hero h1{
+
+    font-size:52px;
+
+    line-height:1.2;
+
+    margin-bottom:25px;
+
+}
+
+.hero p{
+
+    font-size:20px;
+
+    color:#555;
+
+    margin-bottom:35px;
+
+}
+
+.hero-botoes{
+
+    display:flex;
+
+    gap:20px;
+
+    margin-bottom:40px;
+
+}
+
+.btn-vermelho{
+
+    background:var(--vermelho);
+
+    color:#fff;
+
+    padding:18px 32px;
+
+    border-radius:10px;
+
+    font-weight:700;
+
+}
+
+.btn-whatsapp{
+
+    background:var(--verde);
+
+    color:#fff;
+
+    padding:18px 32px;
+
+    border-radius:10px;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    font-weight:700;
+
+}
+
+.hero-info{
+
+    display:flex;
+
+    gap:35px;
+
+    flex-wrap:wrap;
+
+}
+
+.hero-info div{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    font-weight:600;
+
+}
+
+.hero-info i{
+
+    color:var(--vermelho);
+
+    font-size:22px;
+
+}
+
+.hero-imagem img{
+
+    width:100%;
+
+}
+/*==========================================
+ORÇAMENTO
+==========================================*/
+
+.orcamento{
+
+    padding:90px 0;
+
+    background:#ffffff;
+
+}
+
+.orcamento-grid{
+
+    display:grid;
+
+    grid-template-columns:480px 1fr;
+
+    gap:40px;
+
+    align-items:start;
+
+}
+
+.orcamento-card{
+
+    background:#fff;
+
+    border-radius:20px;
+
+    padding:40px;
+
+    box-shadow:0 15px 40px rgba(0,0,0,.08);
+
+}
+
+.subtitulo{
+
+    display:inline-block;
+
+    background:#ffe8e8;
+
+    color:var(--vermelho);
+
+    padding:8px 18px;
+
+    border-radius:30px;
+
+    font-weight:700;
+
+    margin-bottom:20px;
+
+}
+
+.orcamento-card h2{
+
+    font-size:34px;
+
+    margin-bottom:20px;
+
+}
+
+.orcamento-card p{
+
+    color:#666;
+
+    margin-bottom:30px;
+
+    line-height:1.7;
+
+}
+
+.orcamento-card input,
+.orcamento-card select{
+
+    width:100%;
+
+    height:58px;
+
+    padding:0 18px;
+
+    margin-bottom:18px;
+
+    border:1px solid #ddd;
+
+    border-radius:10px;
+
+    font-size:16px;
+
+    outline:none;
+
+}
+
+.orcamento-card input:focus,
+.orcamento-card select:focus{
+
+    border:2px solid var(--vermelho);
+
+}
+
+#calcular{
+
+    width:100%;
+
+    height:60px;
+
+    border:none;
+
+    border-radius:10px;
+
+    background:var(--vermelho);
+
+    color:#fff;
+
+    font-size:18px;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    transition:.3s;
+
+}
+
+#calcular:hover{
+
+    background:#b90000;
+
+}
+
+/*==========================================
+MAPA
+==========================================*/
+
+.mapa-card{
+
+    background:#fff;
+
+    border-radius:20px;
+
+    padding:20px;
+
+    box-shadow:0 15px 40px rgba(0,0,0,.08);
+
+}
+
+#mapa-rota{
+
+    width:100%;
+
+    height:620px;
+
+    border-radius:15px;
+
+    overflow:hidden;
+
+}
+
+/*==========================================
+RESULTADO
+==========================================*/
+
+#resultado{
+
+    margin-top:40px;
+
+    background:#fff;
+
+    border-radius:20px;
+
+    padding:35px;
+
+    box-shadow:0 15px 40px rgba(0,0,0,.08);
+
+    display:none;
+
+}
+
+#resultado h3{
+
+    margin-bottom:25px;
+
+    color:var(--vermelho);
+
+}
+
+.resultado-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(3,1fr);
+
+    gap:20px;
+
+}
+
+.resultado-grid div{
+
+    background:#f8f8f8;
+
+    padding:20px;
+
+    border-radius:12px;
+
+    text-align:center;
+
+}
+
+.resultado-grid strong{
+
+    display:block;
+
+    margin-bottom:12px;
+
+}
+
+.resultado-grid span{
+
+    font-size:28px;
+
+    font-weight:700;
+
+    color:var(--vermelho);
+
+}
+
+.btn-whatsapp-orcamento{
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    gap:12px;
+
+    margin-top:35px;
+
+    background:var(--verde);
+
+    color:#fff;
+
+    height:60px;
+
+    border-radius:12px;
+
+    font-size:18px;
+
+    font-weight:700;
+
+}
+
+/*==========================================
+AUTOCOMPLETE
+==========================================*/
+
+.autocomplete{
+
+    position:relative;
+
+}
+
+.lista-enderecos{
+
+    position:absolute;
+
+    left:0;
+
+    top:100%;
+
+    width:100%;
+
+    background:#fff;
+
+    border:1px solid #ddd;
+
+    border-top:none;
+
+    display:none;
+
+    max-height:250px;
+
+    overflow-y:auto;
+
+    z-index:99999;
+
+}
+
+.item-endereco{
+
+    padding:14px;
+
+    cursor:pointer;
+
+    transition:.2s;
+
+}
+
+.item-endereco:hover{
+
+    background:#f3f3f3;
+
+}
+/*==========================================
+SERVIÇOS
+==========================================*/
+
+.servicos{
+
+    padding:100px 0;
+
+    background:#ffffff;
+
+}
+
+.servicos h2{
+
+    text-align:center;
+
+    font-size:42px;
+
+    margin-bottom:20px;
+
+}
+
+.texto-centro{
+
+    text-align:center;
+
+    max-width:800px;
+
+    margin:0 auto 60px;
+
+    color:#666;
+
+    line-height:1.8;
+
+}
+
+.servicos-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(3,1fr);
+
+    gap:30px;
+
+}
+
+.servico{
+
+    background:#fff;
+
+    border-radius:20px;
+
+    padding:40px;
+
+    text-align:center;
+
+    transition:.35s;
+
+    box-shadow:0 8px 25px rgba(0,0,0,.08);
+
+}
+
+.servico:hover{
+
+    transform:translateY(-10px);
+
+}
+
+.servico i{
+
+    font-size:55px;
+
+    color:var(--vermelho);
+
+    margin-bottom:25px;
+
+}
+
+.servico h3{
+
+    margin-bottom:18px;
+
+}
+
+.servico p{
+
+    color:#666;
+
+    line-height:1.7;
+
+}
+
+/*==========================================
+MAPA RMBH
+==========================================*/
+
+.atendimento{
+
+    padding:100px 0;
+
+    background:#fff;
+
+}
+
+.atendimento h2{
+
+    text-align:center;
+
+    font-size:42px;
+
+    margin-bottom:20px;
+
+}
+
+.mapa-rmbh{
+
+    margin-top:50px;
+
+}
+
+.mapa-rmbh img{
+
+    width:100%;
+
+    border-radius:20px;
+
+    box-shadow:0 15px 40px rgba(0,0,0,.08);
+
+}
+
+/*==========================================
+COMO FUNCIONA
+==========================================*/
+
+.como-funciona{
+
+    padding:100px 0;
+
+    background:#ffffff;
+
+}
+
+.como-funciona h2{
+
+    text-align:center;
+
+    font-size:42px;
+
+    margin-bottom:60px;
+
+}
+
+.passos{
+
+    display:grid;
+
+    grid-template-columns:repeat(3,1fr);
+
+    gap:35px;
+
+}
+
+.passo{
+
+    background:#fff;
+
+    border-radius:20px;
+
+    padding:40px;
+
+    text-align:center;
+
+    box-shadow:0 8px 25px rgba(0,0,0,.08);
+
+}
+
+.numero{
+
+    width:70px;
+
+    height:70px;
+
+    margin:auto;
+
+    border-radius:50%;
+
+    background:var(--vermelho);
+
+    color:#fff;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    font-size:28px;
+
+    font-weight:700;
+
+    margin-bottom:25px;
+
+}
+
+.passo h3{
+
+    margin-bottom:20px;
+
+}
+
+.passo p{
+
+    color:#666;
+
+    line-height:1.7;
+
+}
+
+/*==========================================
+AVALIAÇÕES
+==========================================*/
+
+.avaliacoes{
+
+    padding:100px 0;
+
+    background:#fff;
+
+}
+
+.avaliacoes h2{
+
+    text-align:center;
+
+    font-size:42px;
+
+    margin-bottom:60px;
+
+}
+
+.avaliacoes-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(3,1fr);
+
+    gap:30px;
+
+}
+
+.avaliacao{
+
+    background:#f8f8f8;
+
+    padding:35px;
+
+    border-radius:18px;
+
+}
+
+.estrelas{
+
+    color:#ffc400;
+
+    font-size:24px;
+
+    margin-bottom:20px;
+
+}
+
+.avaliacao p{
+
+    line-height:1.8;
+
+    margin-bottom:20px;
+
+}
+
+.avaliacao strong{
+
+    color:var(--vermelho);
+
+}
+
+/*==========================================
+CONTATO
+==========================================*/
+
+.contato{
+
+    padding:90px 0;
+
+    background:var(--vermelho);
+
+    color:#fff;
+
+    text-align:center;
+
+}
+
+.contato h2{
+
+    font-size:42px;
+
+    margin-bottom:20px;
+
+}
+
+.contato p{
+
+    margin-bottom:40px;
+
+}
+
+.contato-botoes{
+
+    display:flex;
+
+    justify-content:center;
+
+    gap:25px;
+
+}
+
+.btn-ligar{
+
+    background:#fff;
+
+    color:#222;
+
+    padding:18px 30px;
+
+    border-radius:10px;
+
+    font-weight:700;
+
+}
+
+/*==========================================
+FOOTER
+==========================================*/
+
+.footer{
+
+    background:#111;
+
+    color:#fff;
+
+    padding:70px 0;
+
+}
+
+.footer-grid{
+
+    display:grid;
+
+    grid-template-columns:2fr 1fr 1fr;
+
+    gap:40px;
+
+}
+
+.logo-footer{
+
+    width:180px;
+
+    margin-bottom:20px;
+
+}
+
+.footer h3{
+
+    margin-bottom:20px;
+
+}
+
+.footer p{
+
+    color:#bbb;
+
+    line-height:2;
+
+}
+
+/*==========================================
+WHATSAPP FIXO
+==========================================*/
+
+.whatsapp-fixo{
+
+    position:fixed;
+
+    right:25px;
+
+    bottom:25px;
+
+    width:70px;
+
+    height:70px;
+
+    border-radius:50%;
+
+    background:#25D366;
+
+    color:#fff;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    font-size:34px;
+
+    box-shadow:0 10px 25px rgba(0,0,0,.25);
+
+    z-index:99999;
+
+}
+/*==========================================
+RESPONSIVIDADE
+==========================================*/
+
+@media (max-width:1100px){
+
+.hero-grid,
+.orcamento-grid{
+
+    grid-template-columns:1fr;
+
+}
+
+.hero{
+
+    text-align:center;
+
+}
+
+.hero-botoes{
+
+    justify-content:center;
+
+}
+
+.hero-info{
+
+    justify-content:center;
+
+}
+
+#mapa-rota{
+
+    height:500px;
+
+}
+
+.servicos-grid{
+
+    grid-template-columns:repeat(2,1fr);
+
+}
+
+.passos{
+
+    grid-template-columns:1fr;
+
+}
+
+.avaliacoes-grid{
+
+    grid-template-columns:1fr;
+
+}
+
+.footer-grid{
+
+    grid-template-columns:1fr;
+
+}
+
+}
+
+@media (max-width:768px){
+
+.header{
+
+    height:auto;
+
+    padding:20px 0;
+
+}
+
+.header .container{
+
+    flex-direction:column;
+
+    gap:20px;
+
+}
+
+.menu ul{
+
+    flex-direction:column;
+
+    text-align:center;
+
+    gap:15px;
+
+}
+
+.hero{
+
+    padding-top:220px;
+
+}
+
+.hero h1{
+
+    font-size:34px;
+
+}
+
+.hero p{
+
+    font-size:17px;
+
+}
+
+.hero-botoes{
+
+    flex-direction:column;
+
+}
+
+.hero-info{
+
+    flex-direction:column;
+
+    align-items:center;
+
+}
+
+.orcamento-card{
+
+    padding:25px;
+
+}
+
+.resultado-grid{
+
+    grid-template-columns:1fr;
+
+}
+
+.servicos-grid{
+
+    grid-template-columns:1fr;
+
+}
+
+.contato-botoes{
+
+    flex-direction:column;
+
+}
+
+#mapa-rota{
+
+    height:350px;
+
+}
+
+.whatsapp-fixo{
+
+    width:60px;
+
+    height:60px;
+
+    font-size:30px;
+
+    right:20px;
+
+    bottom:20px;
+
+}
+}
+/*==================================================
+GALERIA DE SERVIÇOS
+==================================================*/
+
+.galeria{
+
+    padding:100px 0;
+
+    background:#ffffff;
+
+}
+
+.galeria .container{
+
+    max-width:1200px;
+
+    margin:auto;
+
+    padding:0 20px;
+
+}
+
+.galeria h2{
+
+    text-align:center;
+
+    font-size:42px;
+
+    margin-bottom:15px;
+
+}
+
+.galeria p{
+
+    text-align:center;
+
+    color:#666;
+
+    margin-bottom:50px;
+
+}
+
+.foto{
+
+    width:100%;
+    overflow:hidden;
+    border-radius:18px;
+    box-shadow:0 10px 20px rgba(0,0,0,.15);
+
+}
+
+.foto{
+
+    overflow:hidden;
+
+    border-radius:18px;
+
+    box-shadow:0 10px 25px rgba(0,0,0,.15);
+
+}
+
+.foto img{
+
+    width:100%;
+    height:260px;
+    object-fit:cover;
+    display:block;
+
+}
+
+.foto:hover img{
+
+    transform:scale(1.08);
+
+}
+
+@media(max-width:900px){
+
+.galeria-grid{
+
+    grid-template-columns:repeat(2,1fr);
+
+}
+
+}
+
+@media(max-width:768px)
+
+.galeria-grid{
+
+    grid-template-columns:1fr;
+
+}
+
+.galeria-grid{
+
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:25px;
+    width:100%;
+
+}
+
+.foto{
+
+    width:100%;
+    overflow:hidden;
+    border-radius:18px;
+    box-shadow:0 10px 20px rgba(0,0,0,.15);
+
+}
