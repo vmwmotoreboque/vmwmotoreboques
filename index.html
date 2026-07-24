@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -872,3 +873,879 @@ target="_blank">
 </body>
 
 </html>
+=======
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>VMW Moto-Reboques</title>
+
+    <meta name="description"
+          content="Reboque de motos 24 horas em Belo Horizonte e Região Metropolitana.">
+
+    <meta name="keywords"
+          content="reboque de moto, guincho de moto, transporte de motos">
+
+    <meta name="author"
+          content="VMW Moto-Reboques">
+
+    <link rel="preconnect"
+          href="https://fonts.googleapis.com">
+
+    <link rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+          rel="stylesheet">
+
+    <link rel="stylesheet"
+          href="css/style.css">
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css">
+
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+</head>
+
+<body>
+    <!-- ==========================================================
+HEADER
+=========================================================== -->
+
+<header class="header">
+
+    <div class="container">
+
+        <!-- LOGO -->
+
+        <a href="#" class="logo">
+
+            <img src="imagens/logo.png"
+                 alt="VMW Moto-Reboques">
+
+        </a>
+
+        <!-- MENU -->
+
+        <nav class="menu">
+
+            <ul>
+
+                <li><a href="#inicio">Início</a></li>
+
+                <li><a href="#orcamento">Orçamento</a></li>
+
+                <li><a href="#servicos">Serviços</a></li>
+
+                <li><a href="#atendimento">Atendimento</a></li>
+
+                <li><a href="#contato">Contato</a></li>
+
+            </ul>
+
+        </nav>
+
+        <!-- BOTÃO -->
+
+        <a href="https://wa.me/5531996488546"
+           target="_blank"
+           class="btn-header">
+
+            <i class="fa-brands fa-whatsapp"></i>
+
+            Chamar no WhatsApp
+
+        </a>
+
+    </div>
+
+</header>
+<!-- ==========================================================
+HERO
+=========================================================== -->
+
+<section id="inicio" class="hero">
+
+    <div class="container hero-grid">
+
+        <!-- TEXTO -->
+
+        <div class="hero-conteudo">
+
+            <span class="hero-topo">
+
+                REBOQUE DE MOTOS • 24 HORAS
+
+            </span>
+
+            <h1>
+
+                Transporte seguro para sua motocicleta em Belo Horizonte e Região Metropolitana.
+
+            </h1>
+
+            <p>
+
+                Atendimento rápido, plataforma exclusiva para motos, profissionais experientes e cobertura em toda a RMBH.
+
+            </p>
+
+            <div class="hero-botoes">
+
+                <a href="#orcamento" class="btn-vermelho">
+
+                    Click e calcule online agora!!!
+                    
+                </a>
+
+                <a href="https://wa.me/5531996488546"
+                   target="_blank"
+                   class="btn-whatsapp">
+
+                    <i class="fa-brands fa-whatsapp"></i>
+
+                    WhatsApp
+
+                </a>
+
+            </div>
+
+            <div class="hero-info">
+
+                <div>
+
+                    <i class="fa-solid fa-clock"></i>
+
+                    Atendimento 24 horas
+
+                </div>
+
+                <div>
+
+                    <i class="fa-solid fa-location-dot"></i>
+
+                    Toda Região Metropolitana
+
+                </div>
+
+                <div>
+
+                    <i class="fa-solid fa-shield-halved"></i>
+
+                    Transporte Seguro
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- IMAGEM -->
+
+        <div class="hero-imagem">
+
+            <img src="imagens/hero.jpeg"
+                 alt="VMW Moto-Reboques">
+
+        </div>
+
+    </div>
+
+</section>
+<!-- ==========================================================
+ORÇAMENTO AUTOMÁTICO
+=========================================================== -->
+
+<section id="orcamento" class="orcamento">
+
+    <div class="container">
+
+        <div class="orcamento-grid">
+
+            <!-- FORMULÁRIO -->
+
+            <div class="orcamento-card">
+
+                <span class="subtitulo">
+
+                    ORÇAMENTO ONLINE
+
+                </span>
+
+                <h2>
+
+                    Calcule o valor do transporte da sua moto
+
+                </h2>
+
+                <p>
+
+                    Informe os dados abaixo para calcular automaticamente a distância, o tempo e o valor do serviço.
+
+                </p>
+
+                <form id="formOrcamento">
+
+                    <input
+                        type="text"
+                        id="nome"
+                        placeholder="Nome">
+
+                    <input
+                        type="tel"
+                        id="telefone"
+                        placeholder="WhatsApp">
+
+                    <select id="moto">
+
+                        <option value="">Tipo da motocicleta</option>
+
+                        <option>Honda Biz / Pop</option>
+
+                        <option>Honda CG / Fan / Titan</option>
+
+                        <option>Honda CB / Twister</option>
+
+                        <option>Honda XRE / Sahara</option>
+
+                        <option>Yamaha Fazer / Factor</option>
+
+                        <option>Big Trail</option>
+
+                        <option>Harley-Davidson</option>
+
+                        <option>Outra</option>
+
+                    </select>
+
+                    <!-- RETIRADA -->
+
+                    <div class="autocomplete">
+
+                        <input
+                            type="text"
+                            id="retirada"
+                            placeholder="Endereço de retirada"
+                            autocomplete="off">
+
+                        <div
+                            id="listaRetirada"
+                            class="lista-enderecos">
+
+                        </div>
+
+                    </div>
+
+                    <!-- ENTREGA -->
+
+                    <div class="autocomplete">
+
+                        <input
+                            type="text"
+                            id="entrega"
+                            placeholder="Endereço de entrega"
+                            autocomplete="off">
+
+                        <div
+                            id="listaEntrega"
+                            class="lista-enderecos">
+
+                        </div>
+
+                    </div>
+
+                    <button
+                        type="button"
+                        id="calcular">
+
+                        Calcular Orçamento
+
+                    </button>
+
+                </form>
+
+            </div>
+
+            <!-- MAPA -->
+
+            <div class="mapa-card">
+
+                <div id="mapa-rota"></div>
+
+            </div>
+
+        </div>
+
+        <!-- RESULTADO -->
+
+        <div id="resultado">
+
+            <h3>
+
+                Resultado do Orçamento
+
+            </h3>
+
+            <div class="resultado-grid">
+
+                <div>
+
+                    <strong>Distância</strong>
+
+                    <span id="km">--</span>
+
+                </div>
+
+                <div>
+
+                    <strong>Tempo</strong>
+
+                    <span id="tempo">--</span>
+
+                </div>
+
+                <div>
+
+                    <strong>Valor</strong>
+
+                    <span id="valor">--</span>
+
+                </div>
+
+            </div>
+
+            <a
+                id="enviarWhatsapp"
+                class="btn-whatsapp-orcamento"
+                target="_blank">
+
+                <i class="fa-brands fa-whatsapp"></i>
+
+                Solicitar pelo WhatsApp
+
+            </a>
+
+        </div>
+
+    </div>
+
+</section>
+<!-- ==========================================================
+NOSSOS SERVIÇOS
+=========================================================== -->
+
+<section id="servicos" class="servicos">
+
+    <div class="container">
+
+        <span class="subtitulo">
+
+            NOSSOS SERVIÇOS
+
+        </span>
+
+        <h2>
+
+            Atendimento rápido para qualquer situação
+
+        </h2>
+
+        <p class="texto-centro">
+
+            Trabalhamos com transporte especializado de motocicletas,
+            oferecendo segurança e rapidez em qualquer horário.
+
+        </p>
+
+        <div class="servicos-grid">
+
+            <div class="servico">
+
+                <i class="fa-solid fa-motorcycle"></i>
+
+                <h3>Pane Mecânica</h3>
+
+                <p>
+                    Transporte seguro para oficinas e concessionárias.
+                </p>
+
+            </div>
+
+            <div class="servico">
+
+                <i class="fa-solid fa-car-burst"></i>
+
+                <h3>Acidentes</h3>
+
+                <p>
+                    Atendimento imediato em acidentes e colisões.
+                </p>
+
+            </div>
+
+            <div class="servico">
+
+                <i class="fa-solid fa-road"></i>
+
+                <h3>Viagens</h3>
+
+                <p>
+                    Transporte de motos para qualquer destino.
+                </p>
+
+            </div>
+
+            <div class="servico">
+
+                <i class="fa-solid fa-screwdriver-wrench"></i>
+
+                <h3>Oficinas</h3>
+
+                <p>
+                    Levamos sua moto até a oficina escolhida.
+                </p>
+
+            </div>
+
+            <div class="servico">
+
+                <i class="fa-solid fa-truck-ramp-box"></i>
+
+                <h3>Plataforma Exclusiva</h3>
+
+                <p>
+                    Equipamento desenvolvido especialmente para motocicletas.
+                </p>
+
+            </div>
+
+            <div class="servico">
+
+                <i class="fa-solid fa-clock"></i>
+
+                <h3>24 Horas</h3>
+
+                <p>
+                    Atendimento durante o dia, à noite, fins de semana e feriados.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+<!-- ==========================================================
+ÁREA DE ATENDIMENTO
+=========================================================== -->
+
+<section id="atendimento" class="atendimento">
+
+    <div class="container">
+
+        <span class="subtitulo">
+
+            ÁREA DE ATENDIMENTO
+
+        </span>
+
+        <h2>
+
+            Atendemos toda a Região Metropolitana de Belo Horizonte
+
+        </h2>
+
+        <p class="texto-centro">
+
+            Nossa equipe atende 24 horas por dia em Belo Horizonte e cidades da Região Metropolitana.
+
+        </p>
+
+        <div class="mapa-rmbh">
+
+            <img
+                src="imagens/mapa-rmbh.png"
+                alt="Mapa da Região Metropolitana de Belo Horizonte">
+
+        </div>
+
+    </div>
+
+</section>
+
+<!-- ==========================================================
+COMO FUNCIONA
+=========================================================== -->
+
+<section id="como-funciona" class="como-funciona">
+
+    <div class="container">
+
+        <span class="subtitulo">
+
+            COMO FUNCIONA
+
+        </span>
+
+        <h2>
+
+            Solicitar um reboque é muito simples
+
+        </h2>
+
+        <div class="passos">
+
+            <div class="passo">
+
+                <div class="numero">
+
+                    1
+
+                </div>
+
+                <h3>
+
+                    Solicite o orçamento
+
+                </h3>
+
+                <p>
+
+                    Informe os endereços de retirada e entrega.
+
+                </p>
+
+            </div>
+
+            <div class="passo">
+
+                <div class="numero">
+
+                    2
+
+                </div>
+
+                <h3>
+
+                    Receba o valor
+
+                </h3>
+
+                <p>
+
+                    O sistema calcula automaticamente distância, tempo e preço.
+
+                </p>
+
+            </div>
+
+            <div class="passo">
+
+                <div class="numero">
+
+                    3
+
+                </div>
+
+                <h3>
+
+                    Confirme pelo WhatsApp
+
+                </h3>
+
+                <p>
+
+                    Basta clicar no botão e nossa equipe recebe todas as informações.
+
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+<!-- ==========================================================
+AVALIAÇÕES
+=========================================================== -->
+
+<section id="avaliacoes" class="avaliacoes">
+
+    <div class="container">
+
+        <span class="subtitulo">
+            AVALIAÇÕES
+        </span>
+
+        <h2>
+            O que nossos clientes dizem
+        </h2>
+
+        <div class="avaliacoes-grid">
+
+            <div class="avaliacao">
+
+                <div class="estrelas">
+                    ★★★★★
+                </div>
+
+                <p>
+                    Atendimento muito rápido e cuidadoso com a moto.
+                    Recomendo.
+                </p>
+
+                <strong>
+                    Cliente Google
+                </strong>
+
+            </div>
+
+            <div class="avaliacao">
+
+                <div class="estrelas">
+                    ★★★★★
+                </div>
+
+                <p>
+                    Excelente atendimento e preço justo.
+                </p>
+
+                <strong>
+                    Cliente Google
+                </strong>
+
+            </div>
+
+            <div class="avaliacao">
+
+                <div class="estrelas">
+                    ★★★★★
+                </div>
+
+                <p>
+                    Chegou rapidamente e transportou minha moto com total segurança.
+                </p>
+
+                <strong>
+                    Cliente Google
+                </strong>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!-- ==========================================================
+CONTATO
+=========================================================== -->
+
+<section id="contato" class="contato">
+
+    <div class="container">
+
+        <h2>
+
+            Precisa de um reboque agora?
+
+        </h2>
+
+        <p>
+
+            Atendimento 24 horas em Belo Horizonte e Região Metropolitana.
+
+        </p>
+
+        <div class="contato-botoes">
+
+            <a
+                href="https://wa.me/5531996488546"
+                target="_blank"
+                class="btn-whatsapp">
+
+                <i class="fa-brands fa-whatsapp"></i>
+
+                WhatsApp
+
+            </a>
+
+            <a
+                href="tel:+5531996488546"
+                class="btn-ligar">
+
+                <i class="fa-solid fa-phone"></i>
+
+                Ligar Agora
+
+            </a>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!--==================================================
+GALERIA DE SERVIÇOS
+===================================================-->
+
+<section class="galeria">
+
+    <div class="container">
+
+        <span class="subtitulo">
+            GALERIA DE SERVIÇOS
+        </span>
+
+        <h2>
+            Alguns serviços realizados
+        </h2>
+
+        <p class="texto-centro">
+            Atendimento rápido, transporte seguro e plataforma exclusiva para motocicletas.
+        </p>
+
+        <div class="galeria-grid">
+
+            <div class="foto">
+                <img src="imagens/servico1.jpeg" alt="Serviço 1">
+            </div>
+
+            <div class="foto">
+                <img src="imagens/servico2.jpeg" alt="Serviço 2">
+            </div>
+
+            <div class="foto">
+                <img src="imagens/servico3.jpeg" alt="Serviço 3">
+            </div>
+
+            <div class="foto">
+                <img src="imagens/servico4.jpeg" alt="Serviço 4">
+            </div>
+
+            <div class="foto">
+                <img src="imagens/servico5.jpeg" alt="Serviço 5">
+            </div>
+
+            <div class="foto">
+                <img src="imagens/servico6.jpeg" alt="Serviço 6">
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+<!-- ==========================================================
+RODAPÉ
+=========================================================== -->
+
+<footer class="footer">
+
+    <div class="container footer-grid">
+
+        <div>
+
+            <img
+                src="imagens/logo.png"
+                class="logo-footer"
+                alt="VMW Moto-Reboques">
+
+            <p>
+
+                Reboque especializado para motocicletas.
+
+            </p>
+
+        </div>
+
+        <div>
+
+            <h3>
+
+                Contato
+
+            </h3>
+
+            <p>
+
+                WhatsApp
+
+            </p>
+
+            <strong>
+
+                (31) 99648-8546
+
+            </strong>
+
+        </div>
+
+        <div>
+
+            <h3>
+
+                Atendimento
+
+            </h3>
+
+            <p>
+
+                Belo Horizonte
+
+            </p>
+
+            <p>
+
+                Região Metropolitana
+
+            </p>
+
+            <p>
+
+                24 horas
+
+            </p>
+
+        </div>
+
+    </div>
+
+</footer>
+
+<!-- BOTÃO FLUTUANTE -->
+
+<a
+href="https://wa.me/5531996488546"
+class="whatsapp-fixo"
+target="_blank">
+
+<i class="fa-brands fa-whatsapp"></i>
+
+</a>
+
+<!-- LEAFLET -->
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- JAVASCRIPT -->
+
+<script src="js/script.js"></script>
+
+</body>
+
+</html>
+>>>>>>> 99044ff7a465648b6accff63fb4f549569523197

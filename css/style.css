@@ -1289,67 +1289,91 @@ GALERIA DE SERVIÇOS
 
 }
 
-@media(max-width:900px){
 
-.galeria-grid{
 
-    grid-template-columns:repeat(2,1fr);
+/*==================================================
+RESPONSIVIDADE REFEITA
+==================================================*/
 
-}
-
-}
-
-@media(max-width:768px)
-
-.galeria-grid{
-
-    grid-template-columns:1fr;
-
-}
-
-.galeria-grid{
-
+@media (max-width:900px){
+  .galeria-grid{
     display:grid;
-    grid-template-columns:repeat(3,1fr);
+    grid-template-columns:repeat(2,1fr);
     gap:25px;
-    width:100%;
-
+  }
 }
 
-.foto{
-
-    width:100%;
-    overflow:hidden;
-    border-radius:18px;
-    box-shadow:0 10px 20px rgba(0,0,0,.15);
-
-}
-
-/* ===== Mobile header fix ===== */
 @media (max-width:768px){
-header, .header, .top-header{
-  padding:10px 15px !important;
-  height:auto !important;
-}
-.logo img, .logo{
-  max-width:180px !important;
-  height:auto !important;
-}
-nav ul{
-  display:flex !important;
-  flex-direction:column !important;
-  gap:10px !important;
-  align-items:center !important;
-}
-nav{
-  width:100% !important;
-}
-.header-content,.container-header{
-  display:flex !important;
-  flex-direction:column !important;
-  align-items:center !important;
-}
-.hero,.banner,main{
-  margin-top:20px !important;
-}
+
+  .header{
+    position:fixed;
+    height:auto;
+    padding:12px 0;
+  }
+
+  .header .container{
+    height:auto;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:15px;
+  }
+
+  .logo{
+    width:140px;
+  }
+
+  .menu{
+    width:100%;
+  }
+
+  .menu ul{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+  }
+
+  .btn-header{
+    width:100%;
+    justify-content:center;
+  }
+
+  .hero{
+    padding-top:300px;
+    padding-bottom:50px;
+  }
+
+  .hero-grid,
+  .orcamento-grid,
+  .servicos-grid,
+  .avaliacoes-grid,
+  .passos,
+  .footer-grid,
+  .galeria-grid,
+  .resultado-grid{
+    grid-template-columns:1fr;
+  }
+
+  .hero h1{font-size:34px;}
+  .hero p{font-size:17px;}
+
+  .hero-botoes,
+  .hero-info,
+  .contato-botoes{
+    flex-direction:column;
+    align-items:center;
+  }
+
+  #mapa-rota{height:350px;}
+
+  .orcamento-card{padding:25px;}
+
+  .whatsapp-fixo{
+    width:60px;
+    height:60px;
+    font-size:30px;
+    right:18px;
+    bottom:18px;
+  }
 }
