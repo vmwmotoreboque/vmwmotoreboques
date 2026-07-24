@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 //==================================================
 // VMW MOTO-REBOQUES
 // SCRIPT.JS
@@ -425,32 +424,26 @@ R$ ${preco.toFixed(2)}`;
 
 function calcularPrecoVMW(distanciaTotal){
 
-    const ate20 =
-    parseFloat(localStorage.getItem("ate20")) || 120;
+    let ate20 = Number(localStorage.getItem("ate20"));
+    let km20a40 = Number(localStorage.getItem("km20a40"));
+    let base40 = Number(localStorage.getItem("base40"));
+    let kmAcima40 = Number(localStorage.getItem("kmAcima40"));
 
-    const km20a40 =
-    parseFloat(localStorage.getItem("km20a40")) || 2;
-
-    const base40 =
-    parseFloat(localStorage.getItem("base40")) || 150;
-
-    const kmAcima40 =
-    parseFloat(localStorage.getItem("kmAcima40")) || 2.5;
+    // Usa os padrões apenas se o valor não existir ou for inválido
+    if (isNaN(ate20)) ate20 = 120;
+    if (isNaN(km20a40)) km20a40 = 2;
+    if (isNaN(base40)) base40 = 150;
+    if (isNaN(kmAcima40)) kmAcima40 = 2.5;
 
     if(distanciaTotal <= 20){
-
         return ate20;
-
     }
 
     if(distanciaTotal <= 40){
-
         return ate20 + ((distanciaTotal - 20) * km20a40);
-
     }
 
     return base40 + ((distanciaTotal - 40) * kmAcima40);
-
 }
 //==================================================
 // LER LOCALIZAÇÃO DO REBOQUE
@@ -476,483 +469,339 @@ function obterLocalizacaoReboque(){
 
     ];
 
-=======
+}
 //==================================================
-// VMW MOTO-REBOQUES
-// SCRIPT.JS
-//==================================================
-
-//==============================================
-// CONFIGURAÇÃO
-//==============================================
-
-const API_KEY = "1c1bd45c2e5a431b8e45a47d2c57d950";
-
-//==============================================
-// MAPA
-//==============================================
-
-const mapa = L.map("mapa-rota").setView(
-    [-19.9167,-43.9345],
-    11
-);
-
-L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    {
-        attribution:"© OpenStreetMap"
-    }
-).addTo(mapa);
-
-let linhaRota = null;
-
-let marcadorOrigem = null;
-
-let marcadorDestino = null;
-
-//==============================================
-// ELEMENTOS
-//==============================================
-
-const nome =
-document.getElementById("nome");
-
-const telefone =
-document.getElementById("telefone");
-
-const moto =
-document.getElementById("moto");
-
-const retirada =
-document.getElementById("retirada");
-
-const entrega =
-document.getElementById("entrega");
-
-const botao =
-document.getElementById("calcular");
-
-const resultado =
-document.getElementById("resultado");
-
-const km =
-document.getElementById("km");
-
-const tempo =
-document.getElementById("tempo");
-
-const valor =
-document.getElementById("valor");
-
-const whatsapp =
-document.getElementById("enviarWhatsapp");
-
-//==============================================
-// EVENTO
-//==============================================
-
-botao.addEventListener(
-    "click",
-    calcularOrcamento
-);
-//==================================================
-// AUTOCOMPLETE
+// COMPLEMENTO VMW
+// NÃO REMOVER O CÓDIGO EXISTENTE
+// COLE NO FINAL DO SCRIPT.JS
 //==================================================
 
-configurarAutocomplete(
-    "retirada",
-    "listaRetirada"
-);
+document.addEventListener("DOMContentLoaded",()=>{
 
-configurarAutocomplete(
-    "entrega",
-    "listaEntrega"
-);
+//====================================
+// MENU MOBILE
+//====================================
 
-function configurarAutocomplete(campoId, listaId){
+const menuMobile=document.getElementById("menuMobile");
 
-    const campo = document.getElementById(campoId);
+const menu=document.getElementById("menuPrincipal");
 
-    const lista = document.getElementById(listaId);
+const overlay=document.getElementById("menuOverlay");
 
-    campo.addEventListener("input", async ()=>{
+if(menuMobile && menu){
 
-        const texto = campo.value.trim();
+    menuMobile.addEventListener("click",()=>{
 
-        if(texto.length < 3){
+        menu.classList.toggle("ativo");
 
-            lista.style.display = "none";
+        menuMobile.classList.toggle("ativo");
 
-            return;
-
-        }
-
-        const url =
-`https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(texto)}&limit=5&lang=pt&apiKey=${API_KEY}`;
-
-        const resposta = await fetch(url);
-
-        const dados = await resposta.json();
-
-        lista.innerHTML = "";
-
-        if(!dados.features){
-
-            lista.style.display="none";
-
-            return;
-
-        }
-
-        dados.features.forEach(local=>{
-
-            const item = document.createElement("div");
-
-            item.className = "item-endereco";
-
-            item.innerHTML =
-                "📍 " + local.properties.formatted;
-
-            item.onclick = ()=>{
-
-                campo.value =
-                    local.properties.formatted;
-
-                lista.style.display = "none";
-
-            };
-
-            lista.appendChild(item);
-
-        });
-
-        lista.style.display = "block";
+        overlay.classList.toggle("ativo");
 
     });
 
 }
 
-//==================================================
-// BUSCAR COORDENADAS
-//==================================================
+if(overlay){
 
-async function buscarCoordenadas(endereco){
-
-    const url =
-`https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(endereco)}&limit=1&lang=pt&apiKey=${API_KEY}`;
-
-    const resposta = await fetch(url);
-
-    const dados = await resposta.json();
-
-    if(!dados.features || dados.features.length===0){
-
-        throw new Error("Endereço não encontrado.");
-
-    }
-
-    return dados.features[0].geometry.coordinates;
-
-}
-//==================================================
-// CALCULAR ROTA
-//==================================================
-
-async function calcularRota(origem,destino){
-
-    const url =
-`https://api.geoapify.com/v1/routing?waypoints=${origem[1]},${origem[0]}|${destino[1]},${destino[0]}&mode=drive&apiKey=${API_KEY}`;
-
-    const resposta = await fetch(url);
-
-    const dados = await resposta.json();
-
-    if(!dados.features){
-
-        throw new Error("Erro ao calcular rota.");
-
-    }
-
-    return dados;
+    overlay.addEventListener("click",fecharMenu);
 
 }
 
-//==================================================
-// DESENHAR MAPA
-//==================================================
+document.querySelectorAll(".menu a").forEach(link=>{
 
-function desenharMapa(rota,origem,destino){
+    link.addEventListener("click",fecharMenu);
 
-    if(linhaRota){
+});
 
-        mapa.removeLayer(linhaRota);
+function fecharMenu(){
 
-    }
+    if(menu){
 
-    if(marcadorOrigem){
-
-        mapa.removeLayer(marcadorOrigem);
+        menu.classList.remove("ativo");
 
     }
 
-    if(marcadorDestino){
+    if(menuMobile){
 
-        mapa.removeLayer(marcadorDestino);
-
-    }
-
-    linhaRota = L.geoJSON(rota,{
-        style:{
-            color:"#d60000",
-            weight:6
-        }
-    }).addTo(mapa);
-
-    marcadorOrigem = L.marker([
-        origem[1],
-        origem[0]
-    ]).addTo(mapa);
-
-    marcadorDestino = L.marker([
-        destino[1],
-        destino[0]
-    ]).addTo(mapa);
-
-    mapa.fitBounds(linhaRota.getBounds());
-
-}
-//==================================================
-// CALCULAR ORÇAMENTO
-//==================================================
-
-async function calcularOrcamento(){
-
-    try{
-
-        if(
-            nome.value.trim()==="" ||
-            telefone.value.trim()==="" ||
-            moto.value==="" ||
-            retirada.value.trim()==="" ||
-            entrega.value.trim()===""
-        ){
-
-            alert("Preencha todos os campos.");
-
-            return;
-
-        }
-
-        botao.disabled = true;
-
-        botao.innerHTML = "Calculando...";
-
-        // Coordenadas
-
-        const origem =
-        await buscarCoordenadas(retirada.value);
-
-        const destino =
-        await buscarCoordenadas(entrega.value);
-
-        // Rota
-
-        const rota =
-        await calcularRota(origem,destino);
-
-        //==============================================
-// DESLOCAMENTO DO REBOQUE
-//==============================================
-
-const reboque = obterLocalizacaoReboque();
-
-let distanciaReboque = 0;
-
-let tempoReboque = 0;
-
-if(reboque){
-
-    const rotaReboque =
-    await calcularRota(reboque, origem);
-
-    distanciaReboque =
-    rotaReboque.features[0].properties.distance / 1000;
-
-    tempoReboque =
-    rotaReboque.features[0].properties.time / 60;
-
-    console.log("Reboque:", reboque);
-console.log("Origem:", origem);
-console.log("Distância reboque:", distanciaReboque);
-console.log("Tempo reboque:", tempoReboque);
-
-}
-
-        // Mapa
-
-        desenharMapa(
-            rota,
-            origem,
-            destino
-        );
-
-        //==============================================
-// DISTÂNCIA TOTAL
-//==============================================
-
-const distanciaCliente =
-rota.features[0].properties.distance / 1000;
-
-const distancia =
-distanciaCliente + distanciaReboque;
-const preco =
-calcularPrecoVMW(distancia);
-
-console.log("Distância cliente:", distanciaCliente);
-console.log("Distância total:", distancia);
-console.log("Preço calculado:", preco);
-
-//==============================================
-// TEMPO TOTAL
-//==============================================
-
-const minutos =
-
-(rota.features[0].properties.time / 60)
-
-+
-
-tempoReboque;
-
-//==============================================
-// VALOR
-//==============================================
-
-
-        // Resultado
-
-        resultado.style.display = "block";
-
-        km.innerHTML =
-        distancia.toFixed(1) + " km";
-
-        tempo.innerHTML =
-        Math.round(minutos) + " min";
-
-        valor.innerHTML =
-        "R$ " + preco.toFixed(2);
-
-        // WhatsApp
-
-        const mensagem =
-`🚚 *NOVO ORÇAMENTO - VMW Moto-Reboques*
-
-👤 Nome:
-${nome.value}
-
-📞 WhatsApp:
-${telefone.value}
-
-🏍 Moto:
-${moto.value}
-
-📍 Retirada:
-${retirada.value}
-
-🏁 Entrega:
-${entrega.value}
-
-📏 Distância:
-${distancia.toFixed(1)} km
-
-⏱ Tempo estimado:
-${Math.round(minutos)} minutos
-
-💰 Valor:
-R$ ${preco.toFixed(2)}`;
-
-        whatsapp.href =
-        "https://wa.me/5531996488546?text=" +
-        encodeURIComponent(mensagem);
+        menuMobile.classList.remove("ativo");
 
     }
 
-    catch(erro){
+    if(overlay){
 
-        console.error(erro);
-
-        alert(
-            "Não foi possível calcular a rota. Verifique os endereços informados."
-        );
-
-    }
-
-    finally{
-
-        botao.disabled = false;
-
-        botao.innerHTML =
-        "Calcular Orçamento";
+        overlay.classList.remove("ativo");
 
     }
 
 }
-//==================================================
-// CALCULAR PREÇO VMW
-//==================================================
 
-function calcularPrecoVMW(distanciaTotal){
+//====================================
+// HEADER MENOR AO ROLAR
+//====================================
 
-    const ate20 =
-    parseFloat(localStorage.getItem("ate20")) || 120;
+const header=document.querySelector(".header");
 
-    const km20a40 =
-    parseFloat(localStorage.getItem("km20a40")) || 2;
+window.addEventListener("scroll",()=>{
 
-    const base40 =
-    parseFloat(localStorage.getItem("base40")) || 150;
+    if(window.scrollY>80){
 
-    const kmAcima40 =
-    parseFloat(localStorage.getItem("kmAcima40")) || 2.5;
+        header.classList.add("header-scroll");
 
-    if(distanciaTotal <= 20){
+    }else{
 
-        return ate20;
+        header.classList.remove("header-scroll");
 
     }
 
-    if(distanciaTotal <= 40){
+});
 
-        return ate20 + ((distanciaTotal - 20) * km20a40);
+//====================================
+// VOLTAR AO TOPO
+//====================================
+
+const topo=document.getElementById("voltarTopo");
+
+if(topo){
+
+window.addEventListener("scroll",()=>{
+
+    if(window.scrollY>400){
+
+        topo.classList.add("ativo");
+
+    }else{
+
+        topo.classList.remove("ativo");
 
     }
 
-    return base40 + ((distanciaTotal - 40) * kmAcima40);
+});
+
+topo.addEventListener("click",()=>{
+
+window.scrollTo({
+
+top:0,
+
+behavior:"smooth"
+
+});
+
+});
 
 }
-//==================================================
-// LER LOCALIZAÇÃO DO REBOQUE
-//==================================================
 
-function obterLocalizacaoReboque(){
+//====================================
+// LIGHTBOX GALERIA
+//====================================
 
-    const latitude = parseFloat(localStorage.getItem("latitude"));
+const lightbox=document.getElementById("lightbox");
 
-    const longitude = parseFloat(localStorage.getItem("longitude"));
+const imagem=document.getElementById("imagemLightbox");
 
-    if(isNaN(latitude) || isNaN(longitude)){
+const fechar=document.getElementById("fecharLightbox");
 
-        return null;
+document.querySelectorAll("[data-lightbox] img")
 
-    }
+.forEach(img=>{
 
-    return [
+img.addEventListener("click",()=>{
 
-        longitude,
+imagem.src=img.src;
 
-        latitude
+lightbox.classList.add("ativo");
 
-    ];
+});
 
->>>>>>> 99044ff7a465648b6accff63fb4f549569523197
+});
+
+if(fechar){
+
+fechar.addEventListener("click",()=>{
+
+lightbox.classList.remove("ativo");
+
+});
+
 }
+
+if(lightbox){
+
+lightbox.addEventListener("click",(e)=>{
+
+if(e.target===lightbox){
+
+lightbox.classList.remove("ativo");
+
+}
+
+});
+
+}
+
+//====================================
+// FECHAR AUTOCOMPLETE
+//====================================
+
+document.addEventListener("click",(e)=>{
+
+document.querySelectorAll(".autocomplete").forEach(item=>{
+
+if(!item.contains(e.target)){
+
+const lista=item.querySelector(".lista-enderecos");
+
+if(lista){
+
+lista.style.display="none";
+
+}
+
+}
+
+});
+
+});
+
+//====================================
+// MÁSCARA TELEFONE
+//====================================
+
+if(telefone){
+
+telefone.addEventListener("input",(e)=>{
+
+let v=e.target.value;
+
+v=v.replace(/\D/g,'');
+
+v=v.replace(/^(\d{2})(\d)/g,'($1) $2');
+
+v=v.replace(/(\d{5})(\d)/,'$1-$2');
+
+e.target.value=v;
+
+});
+
+}
+
+//====================================
+// MÁSCARA NOME
+//====================================
+
+if(nome){
+
+nome.addEventListener("input",(e)=>{
+
+e.target.value=e.target.value.replace(/[0-9]/g,'');
+
+});
+
+}
+
+//====================================
+// ENTER NO FORMULÁRIO
+//====================================
+
+const form=document.getElementById("formOrcamento");
+
+if(form){
+
+form.addEventListener("submit",(e)=>{
+
+e.preventDefault();
+
+calcularOrcamento();
+
+});
+
+}
+
+//====================================
+// MAPA MOBILE
+//====================================
+
+if(typeof mapa!=="undefined"){
+
+window.addEventListener("resize",()=>{
+
+setTimeout(()=>{
+
+mapa.invalidateSize();
+
+},300);
+
+});
+
+}
+
+//====================================
+// BOTÃO CALCULAR
+//====================================
+
+if(botao){
+
+botao.addEventListener("click",()=>{
+
+botao.innerHTML="⏳ Calculando...";
+
+});
+
+}
+
+//====================================
+// IMAGENS LAZY
+//====================================
+
+document.querySelectorAll("img")
+
+.forEach(img=>{
+
+img.loading="lazy";
+
+});
+
+//====================================
+// ANIMAÇÃO AO APARECER
+//====================================
+
+const observer=new IntersectionObserver((entries)=>{
+
+entries.forEach(entry=>{
+
+if(entry.isIntersecting){
+
+entry.target.style.opacity=1;
+
+entry.target.style.transform="translateY(0)";
+
+}
+
+});
+
+},{
+
+threshold:.15
+
+});
+
+document.querySelectorAll(
+
+".servico,.avaliacao,.foto,.passo"
+
+)
+
+.forEach(el=>{
+
+el.style.opacity=0;
+
+el.style.transform="translateY(30px)";
+
+el.style.transition=".6s";
+
+observer.observe(el);
+
+});
+
+});

@@ -1377,3 +1377,551 @@ RESPONSIVIDADE REFEITA
     bottom:18px;
   }
 }
+/*==================================================
+VMW - COMPLEMENTO RESPONSIVO
+NÃO APAGAR O CSS EXISTENTE
+COLE NO FINAL DO ARQUIVO
+==================================================*/
+
+
+/*==========================
+MENU MOBILE
+===========================*/
+
+.menu-mobile{
+
+    display:none;
+
+    width:48px;
+
+    height:48px;
+
+    background:none;
+
+    border:none;
+
+    cursor:pointer;
+
+    padding:0;
+
+}
+
+.menu-mobile span{
+
+    display:block;
+
+    width:28px;
+
+    height:3px;
+
+    margin:6px auto;
+
+    background:#222;
+
+    border-radius:10px;
+
+    transition:.35s;
+
+}
+
+.menu-mobile.ativo span:nth-child(1){
+
+    transform:translateY(9px) rotate(45deg);
+
+}
+
+.menu-mobile.ativo span:nth-child(2){
+
+    opacity:0;
+
+}
+
+.menu-mobile.ativo span:nth-child(3){
+
+    transform:translateY(-9px) rotate(-45deg);
+
+}
+
+.menu-overlay{
+
+    position:fixed;
+
+    inset:0;
+
+    background:rgba(0,0,0,.55);
+
+    opacity:0;
+
+    visibility:hidden;
+
+    transition:.35s;
+
+    z-index:9997;
+
+}
+
+.menu-overlay.ativo{
+
+    opacity:1;
+
+    visibility:visible;
+
+}
+
+
+/*==========================
+HEADER AO ROLAR
+===========================*/
+
+.header.header-scroll{
+
+    height:85px;
+
+    transition:.35s;
+
+    box-shadow:0 8px 25px rgba(0,0,0,.12);
+
+}
+
+.header.header-scroll .container{
+
+    height:85px;
+
+}
+
+.header.header-scroll .logo{
+
+    width:140px;
+
+}
+
+
+/*==========================
+ANIMAÇÕES
+===========================*/
+
+.btn-header,
+.btn-whatsapp,
+.btn-vermelho,
+.btn-ligar,
+.btn-whatsapp-orcamento,
+.servico,
+.avaliacao,
+.foto{
+
+    transition:.30s;
+
+}
+
+.btn-header:hover,
+.btn-whatsapp:hover,
+.btn-vermelho:hover,
+.btn-ligar:hover,
+.btn-whatsapp-orcamento:hover{
+
+    transform:translateY(-3px);
+
+}
+
+.servico:hover,
+.avaliacao:hover,
+.foto:hover{
+
+    transform:translateY(-8px);
+
+}
+
+
+/*==========================
+GALERIA
+===========================*/
+
+.galeria-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(3,1fr);
+
+    gap:30px;
+
+}
+
+.foto{
+
+    cursor:pointer;
+
+}
+
+.foto img{
+
+    transition:.35s;
+
+}
+
+.foto:hover img{
+
+    transform:scale(1.08);
+
+}
+
+
+/*==========================
+LIGHTBOX
+===========================*/
+
+.lightbox{
+
+    position:fixed;
+
+    inset:0;
+
+    background:rgba(0,0,0,.92);
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    opacity:0;
+
+    visibility:hidden;
+
+    transition:.35s;
+
+    z-index:99999;
+
+}
+
+.lightbox.ativo{
+
+    opacity:1;
+
+    visibility:visible;
+
+}
+
+.lightbox img{
+
+    max-width:92%;
+
+    max-height:88vh;
+
+    border-radius:12px;
+
+}
+
+#fecharLightbox{
+
+    position:absolute;
+
+    top:30px;
+
+    right:40px;
+
+    color:#fff;
+
+    font-size:45px;
+
+    cursor:pointer;
+
+}
+
+
+/*==========================
+BOTÃO TOPO
+===========================*/
+
+.voltar-topo{
+
+    position:fixed;
+
+    right:28px;
+
+    bottom:110px;
+
+    width:58px;
+
+    height:58px;
+
+    border:none;
+
+    border-radius:50%;
+
+    background:#d60000;
+
+    color:#fff;
+
+    font-size:22px;
+
+    cursor:pointer;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    opacity:0;
+
+    visibility:hidden;
+
+    transition:.35s;
+
+    z-index:9999;
+
+}
+
+.voltar-topo.ativo{
+
+    opacity:1;
+
+    visibility:visible;
+
+}
+
+
+/*==========================
+FORMULÁRIO
+===========================*/
+
+.orcamento-card input:focus,
+.orcamento-card select:focus{
+
+    box-shadow:0 0 0 4px rgba(214,0,0,.12);
+
+}
+
+
+/*==========================
+MOBILE
+===========================*/
+
+@media(max-width:900px){
+
+.galeria-grid{
+
+grid-template-columns:repeat(2,1fr);
+
+}
+
+}
+
+
+@media(max-width:768px){
+
+.header{
+
+padding:12px 0;
+
+}
+
+.header .container{
+
+height:auto;
+
+}
+
+.menu-mobile{
+
+display:block;
+
+position:absolute;
+
+right:20px;
+
+top:28px;
+
+z-index:99999;
+
+}
+
+.menu{
+
+position:fixed;
+
+top:0;
+
+right:-100%;
+
+width:280px;
+
+height:100vh;
+
+background:#fff;
+
+transition:.35s;
+
+padding-top:120px;
+
+box-shadow:-10px 0 30px rgba(0,0,0,.15);
+
+z-index:99998;
+
+overflow-y:auto;
+
+}
+
+.menu.ativo{
+
+right:0;
+
+}
+
+.menu ul{
+
+display:flex;
+
+flex-direction:column;
+
+gap:0;
+
+}
+
+.menu li{
+
+width:100%;
+
+}
+
+.menu a{
+
+display:block;
+
+padding:18px 25px;
+
+border-bottom:1px solid #eee;
+
+}
+
+.btn-header{
+
+display:none;
+
+}
+
+.hero{
+
+padding-top:170px;
+
+}
+
+.hero-grid{
+
+grid-template-columns:1fr;
+
+gap:35px;
+
+}
+
+.hero-imagem{
+
+order:-1;
+
+}
+
+.hero-botoes{
+
+flex-direction:column;
+
+}
+
+.hero-botoes a{
+
+width:100%;
+
+justify-content:center;
+
+}
+
+.hero-info{
+
+justify-content:center;
+
+}
+
+.orcamento-grid{
+
+grid-template-columns:1fr;
+
+}
+
+#mapa-rota{
+
+height:320px;
+
+}
+
+.resultado-grid{
+
+grid-template-columns:1fr;
+
+}
+
+.servicos-grid{
+
+grid-template-columns:1fr;
+
+}
+
+.passos{
+
+grid-template-columns:1fr;
+
+}
+
+.avaliacoes-grid{
+
+grid-template-columns:1fr;
+
+}
+
+.footer-grid{
+
+grid-template-columns:1fr;
+
+}
+
+.contato-botoes{
+
+flex-direction:column;
+
+}
+
+.contato-botoes a{
+
+width:100%;
+
+justify-content:center;
+
+}
+
+.galeria-grid{
+
+grid-template-columns:1fr;
+
+}
+
+.whatsapp-fixo{
+
+width:60px;
+
+height:60px;
+
+font-size:30px;
+
+}
+
+.voltar-topo{
+
+width:52px;
+
+height:52px;
+
+right:18px;
+
+bottom:92px;
+
+}
+
+}
