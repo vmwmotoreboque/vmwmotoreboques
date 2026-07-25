@@ -424,26 +424,25 @@ R$ ${preco.toFixed(2)}`;
 
 function calcularPrecoVMW(distanciaTotal){
 
-    let ate20 = Number(localStorage.getItem("ate20"));
-    let km20a40 = Number(localStorage.getItem("km20a40"));
-    let base40 = Number(localStorage.getItem("base40"));
-    let kmAcima40 = Number(localStorage.getItem("kmAcima40"));
+    const ate20 = parseFloat(localStorage.getItem("ate20"));
+    const km20a40 = parseFloat(localStorage.getItem("km20a40"));
+    const base40 = parseFloat(localStorage.getItem("base40"));
+    const kmAcima40 = parseFloat(localStorage.getItem("kmAcima40"));
 
-    // Usa os padrões apenas se o valor não existir ou for inválido
-    if (isNaN(ate20)) ate20 = 120;
-    if (isNaN(km20a40)) km20a40 = 2;
-    if (isNaN(base40)) base40 = 150;
-    if (isNaN(kmAcima40)) kmAcima40 = 2.5;
+    const precoAte20 = isNaN(ate20) ? 120 : ate20;
+    const precoKm20a40 = isNaN(km20a40) ? 2 : km20a40;
+    const precoBase40 = isNaN(base40) ? 150 : base40;
+    const precoKmAcima40 = isNaN(kmAcima40) ? 2.5 : kmAcima40;
 
     if(distanciaTotal <= 20){
-        return ate20;
+        return precoAte20;
     }
 
     if(distanciaTotal <= 40){
-        return ate20 + ((distanciaTotal - 20) * km20a40);
+        return precoAte20 + ((distanciaTotal - 20) * precoKm20a40);
     }
 
-    return base40 + ((distanciaTotal - 40) * kmAcima40);
+    return precoBase40 + ((distanciaTotal - 40) * precoKmAcima40);
 }
 //==================================================
 // LER LOCALIZAÇÃO DO REBOQUE
