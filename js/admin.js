@@ -12,6 +12,8 @@ const SENHA = "vmw2026";
 // COLE A MESMA CHAVE DO script.js
 const API_KEY = "1c1bd45c2e5a431b8e45a47d2c57d950";
 
+let watchId = null;
+
 //==============================
 // ELEMENTOS
 //==============================
@@ -44,6 +46,8 @@ btnEntrar.addEventListener("click", () => {
 
         carregarConfiguracoes();
 
+        iniciarGPSAutomatico();
+
     }
 
     else{
@@ -63,6 +67,14 @@ btnEntrar.addEventListener("click", () => {
 //==============================
 
 btnSair.addEventListener("click",()=>{
+
+    if(watchId !== null){
+
+    navigator.geolocation.clearWatch(watchId);
+
+    watchId = null;
+
+}
 
     painel.style.display="none";
 
@@ -98,6 +110,74 @@ function carregarConfiguracoes(){
 
     document.getElementById("lon").innerHTML =
     localStorage.getItem("longitude") || "--";
+
+}
+
+//==============================
+// GPS AUTOMÁTICO
+//==============================
+
+function iniciarGPSAutomatico(){
+
+    if(!navigator.geolocation){
+
+        alert("Seu navegador não suporta geolocalização.");
+
+        return;
+
+    }
+
+    if(watchId !== null){
+
+        navigator.geolocation.clearWatch(watchId);
+
+    }
+
+    watchId = navigator.geolocation.watchPosition(
+
+        async(posicao)=>{
+
+            const latitude = posicao.coords.latitude;
+            const longitude = posicao.coords.longitude;
+
+            document.getElementById("lat").innerHTML =
+            latitude.toFixed(6);
+
+            document.getElementById("lon").innerHTML =
+            longitude.toFixed(6);
+
+            localStorage.setItem(
+                "latitude",
+                latitude
+            );
+
+            localStorage.setItem(
+                "longitude",
+                longitude
+            );
+
+            await buscarCidade(
+                latitude,
+                longitude
+            );
+
+        },
+
+        (erro)=>{
+
+            console.log("GPS:", erro);
+
+        },
+
+        {
+
+            enableHighAccuracy:true,
+            timeout:10000,
+            maximumAge:5000
+
+        }
+
+    );
 
 }
 //==============================
