@@ -188,6 +188,8 @@ async function calcularRota(origem,destino){
 
     const dados = await resposta.json();
 
+    console.log("Resposta Geoapify:", dados);
+
     if(!dados.features){
 
         throw new Error("Erro ao calcular rota.");
