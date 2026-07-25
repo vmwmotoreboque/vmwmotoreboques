@@ -11,6 +11,7 @@ const SENHA = "vmw2026";
 
 // COLE A MESMA CHAVE DO script.js
 const API_KEY = "1c1bd45c2e5a431b8e45a47d2c57d950";
+const API_URL = "https://vmw-config-api.vmwreboques.workers.dev";
 
 let watchId = null;
 
@@ -307,29 +308,55 @@ async function buscarCidade(lat,lon){
 // SALVAR CONFIGURAÇÕES
 //==============================
 
-btnSalvar.addEventListener("click",()=>{
+btnSalvar.addEventListener("click", async () => {
 
-    localStorage.setItem(
-        "ate20",
-        document.getElementById("ate20").value
-    );
+    const configuracao = {
 
-    localStorage.setItem(
-        "km20a40",
-        document.getElementById("km20a40").value
-    );
+        ate20: document.getElementById("ate20").value,
 
-    localStorage.setItem(
-        "base40",
-        document.getElementById("base40").value
-    );
+        km20a40: document.getElementById("km20a40").value,
 
-    localStorage.setItem(
-        "kmAcima40",
-        document.getElementById("kmAcima40").value
-    );
+        base40: document.getElementById("base40").value,
 
-    alert("Configurações salvas com sucesso!");
+        kmAcima40: document.getElementById("kmAcima40").value,
+
+        cidade: localStorage.getItem("cidade"),
+
+        latitude: localStorage.getItem("latitude"),
+
+        longitude: localStorage.getItem("longitude")
+
+    };
+
+    try{
+
+        const resposta = await fetch(API_URL,{
+
+            method:"POST",
+
+            headers:{
+                "Content-Type":"application/json"
+            },
+
+            body:JSON.stringify(configuracao)
+
+        });
+
+        if(!resposta.ok){
+
+            throw new Error();
+
+        }
+
+        alert("Configurações salvas na Cloudflare!");
+
+    }
+
+    catch(e){
+
+        alert("Erro ao salvar na Cloudflare.");
+
+    }
 
 });
 
@@ -379,8 +406,33 @@ async function enviarCloudflare(){
 
     };
 
-    console.log("Configuração pronta para enviar:");
+try {
 
-    console.table(configuracao);
+    const resposta = await fetch(
+        "https://vmw-config-api.vmwreboques.workers.dev",
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(configuracao)
+        }
+    );
+
+    if (resposta.ok) {
+
+        alert("Configurações salvas na Cloudflare!");
+
+    } else {
+
+        alert("Erro ao salvar.");
+
+    }
+
+} catch (erro) {
+
+    console.error(erro);
+
+    alert("Erro de conexão.");
 
 }
