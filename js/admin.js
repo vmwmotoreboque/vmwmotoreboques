@@ -14,6 +14,7 @@ const API_KEY = "1c1bd45c2e5a431b8e45a47d2c57d950";
 const API_URL = "https://vmw-config-api.vmwreboques.workers.dev";
 
 let watchId = null;
+let gpsTimer = null;
 
 // Última posição enviada para a Cloudflare
 let ultimaLatitudeEnviada = null;
@@ -167,6 +168,9 @@ function iniciarGPSAutomatico(){
     watchId = navigator.geolocation.watchPosition(
 
         async(posicao)=>{
+
+            console.log("GPS atualizou", new Date().toLocaleTimeString());
+
 
             const latitude = posicao.coords.latitude;
             const longitude = posicao.coords.longitude;
