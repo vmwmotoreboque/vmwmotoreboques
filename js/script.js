@@ -477,7 +477,37 @@ function obterLocalizacaoReboque(){
 // COLE NO FINAL DO SCRIPT.JS
 //==================================================
 
+async function carregarConfiguracoesCloudflare(){
+
+    try{
+
+        const resposta = await fetch(
+            "https://vmw-config-api.vmwreboques.workers.dev"
+        );
+
+        const config = await resposta.json();
+
+        localStorage.setItem("ate20", config.ate20);
+        localStorage.setItem("km20a40", config.km20a40);
+        localStorage.setItem("base40", config.base40);
+        localStorage.setItem("kmAcima40", config.kmAcima40);
+        localStorage.setItem("cidade", config.cidade);
+        localStorage.setItem("latitude", config.latitude);
+        localStorage.setItem("longitude", config.longitude);
+
+        console.log("Configuração carregada da Cloudflare:", config);
+
+    }catch(e){
+
+        console.error("Erro ao carregar Cloudflare:", e);
+
+    }
+
+}
+
 document.addEventListener("DOMContentLoaded",()=>{
+
+    carregarConfiguracoesCloudflare();
 
 //====================================
 // MENU MOBILE
@@ -805,4 +835,4 @@ observer.observe(el);
 
 });
 
-});
+})
