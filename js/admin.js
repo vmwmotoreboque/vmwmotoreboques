@@ -15,6 +15,13 @@ const API_URL = "https://vmw-config-api.vmwreboques.workers.dev";
 
 let watchId = null;
 
+// Última posição enviada para a Cloudflare
+let ultimaLatitudeEnviada = null;
+let ultimaLongitudeEnviada = null;
+
+// Atualiza somente se andar 100 metros
+const DISTANCIA_MINIMA = 100;
+
 //==============================
 // ELEMENTOS
 //==============================
@@ -114,6 +121,29 @@ function carregarConfiguracoes(){
 
 }
 
+function distanciaEmMetros(lat1, lon1, lat2, lon2){
+
+    const R = 6371000;
+
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) *
+        Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(
+        Math.sqrt(a),
+        Math.sqrt(1 - a)
+    );
+
+    return R * c;
+
+}
+
 //==============================
 // GPS AUTOMÁTICO
 //==============================
@@ -161,6 +191,76 @@ function iniciarGPSAutomatico(){
                 latitude,
                 longitude
             );
+
+            // Atualiza automaticamente a Cloudflare quando andar mais de 100 metros
+
+let enviar = false;
+
+if (ultimaLatitudeEnviada === null || ultimaLongitudeEnviada === null) {
+
+    enviar = true;
+
+} else {
+
+    const distancia = distanciaEmMetros(
+        ultimaLatitudeEnviada,
+        ultimaLongitudeEnviada,
+        latitude,
+        longitude
+    );
+
+    console.log("Distância desde o último envio:", distancia);
+
+    if (distancia >= DISTANCIA_MINIMA) {
+
+        enviar = true;
+
+    }
+
+}
+
+if (enviar) {
+
+    try {
+
+        const configuracao = {
+
+            ate20: document.getElementById("ate20").value,
+            km20a40: document.getElementById("km20a40").value,
+            base40: document.getElementById("base40").value,
+            kmAcima40: document.getElementById("kmAcima40").value,
+            cidade: localStorage.getItem("cidade"),
+            latitude: latitude,
+            longitude: longitude
+
+        };
+
+        await fetch(API_URL, {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify(configuracao)
+
+        });
+
+        ultimaLatitudeEnviada = latitude;
+        ultimaLongitudeEnviada = longitude;
+
+        console.log("Cloudflare atualizada.");
+        btnSalvar.innerHTML = "Última atualização: " +
+        new Date().toLocaleTimeString("pt-BR");
+
+    } catch (erro) {
+
+        console.error("Erro ao atualizar Cloudflare:", erro);
+
+    }
+
+}
 
         },
 
@@ -224,6 +324,32 @@ btnAtualizar.addEventListener("click",()=>{
                 latitude,
                 longitude
             );
+            const configuracao = {
+
+    ate20: document.getElementById("ate20").value,
+    km20a40: document.getElementById("km20a40").value,
+    base40: document.getElementById("base40").value,
+    kmAcima40: document.getElementById("kmAcima40").value,
+    cidade: localStorage.getItem("cidade"),
+    latitude,
+    longitude
+
+};
+
+await fetch(API_URL, {
+
+    method: "POST",
+
+    headers: {
+        "Content-Type": "application/json"
+    },
+
+    body: JSON.stringify(configuracao)
+
+});
+
+ultimaLatitudeEnviada = latitude;
+ultimaLongitudeEnviada = longitude;
 
             btnAtualizar.innerHTML=
             "Atualizar localização";
