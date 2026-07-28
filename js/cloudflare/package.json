@@ -1,0 +1,15 @@
+{
+  "name": "vmw-config-api",
+  "version": "1.0.0",
+  "description": "API de configuração para VMW Moto-Reboques",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "kv:create": "wrangler kv:namespace create VMV_CONFIG",
+    "kv:preview": "wrangler kv:namespace create VMV_CONFIG --preview"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

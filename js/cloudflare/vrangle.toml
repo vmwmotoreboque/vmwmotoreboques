@@ -1,0 +1,14 @@
+name = "vmw-config-api"
+type = "javascript"
+account_id = "844ac79433b0715c24a0b836dcc5b85b"
+workers_dev = true
+route = "vmw-config-api.vmwreboques.workers.dev"
+compatibility_date = "2024-12-18"
+
+[[kv_namespaces]]
+binding = "VMV_CONFIG"
+id = "vmw-config-kv"
+preview_id = "vmw-config-kv"
+
+[vars]
+GEOAPIFY_KEY = "1c1bd45c2e5a431b8e45a47d2c57d950"
