@@ -1,25 +1,16 @@
 //==================================================
-// VMW MOTO-REBOQUES - ADMIN.JS CORRIGIDO
+// VMW MOTO-REBOQUES - ADMIN.JS (FINAL)
 //==================================================
-
-//==============================
-// CONFIGURAÇÕES
-//==============================
 
 const SENHA = "vmw2026";
 const API_KEY = "1c1bd45c2e5a431b8e45a47d2c57d950";
 const API_URL = "https://vmw-config-api.vmwreboques.workers.dev";
 
-let watchId = null;
-let gpsTimer = null;
-let ultimaLatitudeEnviada = null;
-let ultimaLongitudeEnviada = null;
-const DISTANCIA_MINIMA = 100;
-let contadorAtualizacoes = 0;
-
-//==============================
-// ELEMENTOS
-//==============================
+let watchId = null, gpsTimer = null;
+let ultimaLatEnviada = null, ultimaLonEnviada = null;
+const DIST_MIN = 100; // metros
+let contador = 0;
+let paginaVisivel = true;
 
 const telaLogin = document.querySelector(".login");
 const painel = document.getElementById("painel");
@@ -29,176 +20,142 @@ const btnEntrar = document.getElementById("entrar");
 const btnSair = document.getElementById("sair");
 const btnSalvar = document.getElementById("salvar");
 const btnAtualizar = document.getElementById("atualizarLocalizacao");
+const statusGPS = document.getElementById("statusGPS");
 
-//==============================
-// FUNÇÕES AUXILIARES
-//==============================
-
-function distanciaEmMetros(lat1, lon1, lat2, lon2) {
+function distanciaMetros(lat1, lon1, lat2, lon2) {
     const R = 6371000;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
-
-//==============================
-// BUSCAR CIDADE
-//==============================
 
 async function buscarCidade(lat, lon) {
     try {
-        const resposta = await fetch(
-            `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lon}&apiKey=${API_KEY}`
-        );
-        const dados = await resposta.json();
+        const url = `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lon}&apiKey=${API_KEY}`;
+        const res = await fetch(url);
+        const dados = await res.json();
         if (!dados.features || dados.features.length === 0) return;
-        
         const info = dados.features[0].properties;
         const cidade = info.city || info.town || info.village || info.county || "Não encontrada";
-        
         document.getElementById("cidade").innerHTML = cidade;
         localStorage.setItem("cidade", cidade);
-        
-        return cidade;
-    } catch (erro) {
-        console.log("Erro ao buscar cidade:", erro);
-        return null;
-    }
+    } catch (e) { console.log("Erro cidade:", e); }
 }
 
-//==============================
-// SALVAR NA CLOUDFLARE
-//==============================
-
-async function salvarConfiguracaoCloudflare(latitude, longitude) {
+async function salvarCloudflare(lat, lon) {
     try {
-        const configuracao = {
+        const config = {
             ate20: document.getElementById("ate20").value,
             km20a40: document.getElementById("km20a40").value,
             base40: document.getElementById("base40").value,
             kmAcima40: document.getElementById("kmAcima40").value,
             cidade: localStorage.getItem("cidade") || "Belo Horizonte",
-            latitude: latitude,
-            longitude: longitude
+            latitude: lat,
+            longitude: lon
         };
-
-        const resposta = await fetch(API_URL, {
+        const res = await fetch(API_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(configuracao)
+            body: JSON.stringify(config)
         });
-
-        if (!resposta.ok) throw new Error("Erro na resposta");
-
-        ultimaLatitudeEnviada = latitude;
-        ultimaLongitudeEnviada = longitude;
-        contadorAtualizacoes++;
-
+        if (!res.ok) throw new Error("Falha ao salvar");
+        ultimaLatEnviada = lat;
+        ultimaLonEnviada = lon;
+        contador++;
         const now = new Date().toLocaleTimeString("pt-BR");
-        btnSalvar.innerHTML = `✅ Salvo em ${now} (${contadorAtualizacoes}x)`;
-        
-        console.log(`📤 Configuração salva (${contadorAtualizacoes}x)`);
+        btnSalvar.innerHTML = `✅ Salvo em ${now} (${contador}x)`;
+        console.log(`📤 Salvo (${contador}x)`);
         return true;
-    } catch (erro) {
-        console.error("Erro ao salvar:", erro);
+    } catch (e) {
+        console.error("Erro ao salvar:", e);
         return false;
     }
 }
 
-//==============================
-// ATUALIZAR POSIÇÃO GPS
-//==============================
+async function processarPosicao(pos) {
+    const lat = pos.coords.latitude;
+    const lon = pos.coords.longitude;
+    document.getElementById("lat").innerHTML = lat.toFixed(6);
+    document.getElementById("lon").innerHTML = lon.toFixed(6);
+    localStorage.setItem("latitude", lat);
+    localStorage.setItem("longitude", lon);
 
-async function atualizarPosicaoGPS() {
+    await buscarCidade(lat, lon);
+
+    let enviar = false;
+    if (ultimaLatEnviada === null || ultimaLonEnviada === null) {
+        enviar = true;
+    } else {
+        const dist = distanciaMetros(ultimaLatEnviada, ultimaLonEnviada, lat, lon);
+        if (dist >= DIST_MIN) enviar = true;
+    }
+    if (enviar) await salvarCloudflare(lat, lon);
+
+    const now = new Date().toLocaleTimeString("pt-BR");
+    btnAtualizar.innerHTML = `🔄 Atualizado ${now}`;
+    if (statusGPS) {
+        statusGPS.innerHTML = `✅ GPS ativo (${now})`;
+        statusGPS.style.color = "#1ecb5a";
+    }
+    console.log(`📍 ${lat.toFixed(6)}, ${lon.toFixed(6)}`);
+}
+
+function erroGPS(err) {
+    console.error("Erro GPS:", err);
+    btnAtualizar.innerHTML = "❌ Falha - Clique para tentar";
+    if (statusGPS) {
+        statusGPS.innerHTML = `⚠️ Erro: ${err.message}`;
+        statusGPS.style.color = "#ff6b00";
+    }
+    btnAtualizar.disabled = false;
+}
+
+function iniciarWatchGPS() {
     if (!navigator.geolocation) {
         alert("Seu navegador não suporta geolocalização.");
         return;
     }
-
-    btnAtualizar.innerHTML = "⏳ Obtendo localização...";
-    btnAtualizar.disabled = true;
-
-    navigator.geolocation.getCurrentPosition(
-        async (posicao) => {
-            const latitude = posicao.coords.latitude;
-            const longitude = posicao.coords.longitude;
-
-            document.getElementById("lat").innerHTML = latitude.toFixed(6);
-            document.getElementById("lon").innerHTML = longitude.toFixed(6);
-            localStorage.setItem("latitude", latitude);
-            localStorage.setItem("longitude", longitude);
-
-            await buscarCidade(latitude, longitude);
-
-            let enviar = false;
-            if (ultimaLatitudeEnviada === null || ultimaLongitudeEnviada === null) {
-                enviar = true;
-            } else {
-                const distancia = distanciaEmMetros(
-                    ultimaLatitudeEnviada,
-                    ultimaLongitudeEnviada,
-                    latitude,
-                    longitude
-                );
-                if (distancia >= DISTANCIA_MINIMA) {
-                    enviar = true;
-                }
-            }
-
-            if (enviar) {
-                await salvarConfiguracaoCloudflare(latitude, longitude);
-            }
-
-            const now = new Date().toLocaleTimeString("pt-BR");
-            btnAtualizar.innerHTML = `🔄 Atualizado ${now}`;
-            btnAtualizar.disabled = false;
-
-            console.log(`📍 Posição: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
-        },
-        (erro) => {
-            console.error("Erro GPS:", erro);
-            btnAtualizar.innerHTML = "❌ Falha - Clique para tentar";
-            btnAtualizar.disabled = false;
-            alert("Não foi possível obter sua localização.");
-        },
-        {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 5000
-        }
+    if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+    }
+    watchId = navigator.geolocation.watchPosition(
+        processarPosicao,
+        erroGPS,
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
     );
+    console.log("🔄 Watch GPS iniciado");
+    if (statusGPS) {
+        statusGPS.innerHTML = "🔄 Aguardando GPS...";
+        statusGPS.style.color = "#ffaa00";
+    }
+    btnAtualizar.innerHTML = "🔄 GPS em execução";
 }
 
-//==============================
-// INICIAR GPS AUTOMÁTICO (30s)
-//==============================
-
-function iniciarGPSAutomatico() {
-    if (!navigator.geolocation) {
-        alert("Seu navegador não suporta geolocalização.");
-        return;
-    }
-
-    // Primeira atualização imediata
-    setTimeout(atualizarPosicaoGPS, 1000);
-
-    // Timer a cada 30 segundos
-    if (gpsTimer) {
-        clearInterval(gpsTimer);
-    }
-
-    gpsTimer = setInterval(atualizarPosicaoGPS, 30000);
-
-    console.log("🔄 GPS automático iniciado - 30 segundos");
+function iniciarFallbackTimer() {
+    if (gpsTimer) clearInterval(gpsTimer);
+    gpsTimer = setInterval(() => {
+        if (!paginaVisivel) return;
+        if (watchId !== null) return;
+        navigator.geolocation.getCurrentPosition(processarPosicao, erroGPS, { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 });
+    }, 30000);
+    console.log("⏱️ Fallback timer iniciado (30s)");
 }
 
-//==============================
-// CARREGAR CONFIGURAÇÕES
-//==============================
+document.addEventListener("visibilitychange", () => {
+    paginaVisivel = !document.hidden;
+    if (paginaVisivel) {
+        console.log("📱 Página visível - reiniciando GPS");
+        if (watchId !== null) {
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+        }
+        iniciarWatchGPS();
+    } else {
+        console.log("📱 Página oculta - GPS continua em background");
+    }
+});
 
 function carregarConfiguracoes() {
     document.getElementById("ate20").value = localStorage.getItem("ate20") || 120;
@@ -210,83 +167,57 @@ function carregarConfiguracoes() {
     document.getElementById("lon").innerHTML = localStorage.getItem("longitude") || "--";
 }
 
-//==============================
-// LOGIN
-//==============================
-
 btnEntrar.addEventListener("click", () => {
     if (campoSenha.value === SENHA) {
         telaLogin.style.display = "none";
         painel.style.display = "block";
         erro.style.display = "none";
-        
         carregarConfiguracoes();
-        iniciarGPSAutomatico();
+        iniciarWatchGPS();
+        iniciarFallbackTimer();
+        verificarStatus();
     } else {
         erro.style.display = "block";
         campoSenha.value = "";
         campoSenha.focus();
     }
 });
-
-campoSenha.addEventListener("keypress", (e) => {
-    if (e.key === "Enter") btnEntrar.click();
-});
-
-//==============================
-// SAIR
-//==============================
+campoSenha.addEventListener("keypress", (e) => { if (e.key === "Enter") btnEntrar.click(); });
 
 btnSair.addEventListener("click", () => {
-    if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-        watchId = null;
-    }
-    
-    if (gpsTimer) {
-        clearInterval(gpsTimer);
-        gpsTimer = null;
-    }
-    
+    if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+    if (gpsTimer) { clearInterval(gpsTimer); gpsTimer = null; }
     painel.style.display = "none";
     telaLogin.style.display = "flex";
     campoSenha.value = "";
-    
     console.log("🔒 Sessão encerrada");
 });
 
-//==============================
-// EVENTOS
-//==============================
-
-btnAtualizar.addEventListener("click", atualizarPosicaoGPS);
-
-btnSalvar.addEventListener("click", async () => {
-    const latitude = parseFloat(localStorage.getItem("latitude"));
-    const longitude = parseFloat(localStorage.getItem("longitude"));
-    
-    if (isNaN(latitude) || isNaN(longitude)) {
-        alert("⚠️ Localização não disponível. Atualize a localização primeiro.");
-        return;
-    }
-    
-    const sucesso = await salvarConfiguracaoCloudflare(latitude, longitude);
-    
-    if (sucesso) {
-        alert("✅ Configurações salvas na Cloudflare!");
-    } else {
-        alert("❌ Erro ao salvar na Cloudflare.");
-    }
+btnAtualizar.addEventListener("click", () => {
+    btnAtualizar.disabled = true;
+    btnAtualizar.innerHTML = "⏳ Obtendo...";
+    navigator.geolocation.getCurrentPosition(
+        (pos) => { processarPosicao(pos); btnAtualizar.disabled = false; },
+        (err) => { erroGPS(err); btnAtualizar.disabled = false; },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
 });
 
-//==============================
-// VERIFICAR STATUS
-//==============================
+btnSalvar.addEventListener("click", async () => {
+    const lat = parseFloat(localStorage.getItem("latitude"));
+    const lon = parseFloat(localStorage.getItem("longitude"));
+    if (isNaN(lat) || isNaN(lon)) {
+        alert("⚠️ Localização não disponível. Aguarde o GPS.");
+        return;
+    }
+    const ok = await salvarCloudflare(lat, lon);
+    alert(ok ? "✅ Salvo!" : "❌ Erro ao salvar.");
+});
 
 async function verificarStatus() {
     try {
-        const resposta = await fetch(API_URL);
-        if (resposta.ok) {
+        const res = await fetch(API_URL);
+        if (res.ok) {
             document.getElementById("statusCloud").innerHTML = "✅ Conectado";
             document.getElementById("statusCloud").style.color = "#1ecb5a";
         } else {
@@ -298,7 +229,6 @@ async function verificarStatus() {
         document.getElementById("statusCloud").style.color = "#d60000";
     }
 }
-
 setInterval(verificarStatus, 60000);
 
-console.log("✅ ADMIN.JS CARREGADO!");
+console.log("✅ ADMIN.JS FINAL CARREGADO!");
