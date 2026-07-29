@@ -5,7 +5,28 @@
 const API_KEY = "1c1bd45c2e5a431b8e45a47d2c57d950";
 const API_URL = "https://vmw-config-api.vmwreboques.workers.dev";
 
-// Inicializar mapa
+//==============================================
+// FORÇAR RECARGA DE CONFIGURAÇÕES
+//==============================================
+
+const VERSAO_SISTEMA = "2.0.1";
+const versaoAtual = localStorage.getItem("vmw_versao");
+
+if (versaoAtual !== VERSAO_SISTEMA) {
+    console.log("🔄 Nova versão detectada! Limpando cache...");
+    const chavesParaLimpar = [
+        "ate20", "km20a40", "base40", "kmAcima40", 
+        "cidade", "latitude", "longitude", "ultimaAtualizacao"
+    ];
+    chavesParaLimpar.forEach(chave => localStorage.removeItem(chave));
+    localStorage.setItem("vmw_versao", VERSAO_SISTEMA);
+    console.log("✅ Cache limpo! Versão atual:", VERSAO_SISTEMA);
+}
+
+//==============================================
+// MAPA
+//==============================================
+
 const mapa = L.map("mapa-rota").setView([-19.9167, -43.9345], 11);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "© OpenStreetMap"
@@ -13,7 +34,10 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 
 let linhaRota = null, marcadorOrigem = null, marcadorDestino = null, marcadorReboque = null;
 
-// Elementos
+//==============================================
+// ELEMENTOS
+//==============================================
+
 const nome = document.getElementById("nome");
 const telefone = document.getElementById("telefone");
 const moto = document.getElementById("moto");
@@ -26,7 +50,10 @@ const tempo = document.getElementById("tempo");
 const valor = document.getElementById("valor");
 const whatsapp = document.getElementById("enviarWhatsapp");
 
-// Carregar config da Cloudflare
+//==============================================
+// CARREGAR CONFIGURAÇÕES
+//==============================================
+
 async function carregarConfiguracoesCloudflare() {
     try {
         const res = await fetch(API_URL);
@@ -36,7 +63,6 @@ async function carregarConfiguracoesCloudflare() {
         console.log("✅ Config carregada");
     } catch (e) {
         console.error("❌ Erro ao carregar Cloudflare:", e);
-        // Fallback
         if (!localStorage.getItem("ate20")) {
             localStorage.setItem("ate20", "120");
             localStorage.setItem("km20a40", "2");
@@ -143,7 +169,10 @@ async function calcularOrcamento() {
     }
 }
 
-// Autocomplete
+//==============================================
+// AUTOCOMPLETE
+//==============================================
+
 function configurarAutocomplete(campoId, listaId) {
     const campo = document.getElementById(campoId);
     const lista = document.getElementById(listaId);
@@ -172,10 +201,18 @@ function configurarAutocomplete(campoId, listaId) {
     });
 }
 
+//==============================================
+// EVENTOS
+//==============================================
+
 botao.addEventListener("click", calcularOrcamento);
 configurarAutocomplete("retirada", "listaRetirada");
 configurarAutocomplete("entrega", "listaEntrega");
 document.getElementById("formOrcamento").addEventListener("submit", (e) => { e.preventDefault(); calcularOrcamento(); });
+
+//==============================================
+// INICIALIZAÇÃO
+//==============================================
 
 document.addEventListener("DOMContentLoaded", async () => {
     console.log("🚀 Inicializando VMW...");
@@ -185,6 +222,5 @@ document.addEventListener("DOMContentLoaded", async () => {
         L.marker(reboquePos, { icon: L.divIcon({ html: '🚚', iconSize: [40,40] }) }).addTo(mapa).bindPopup('📍 Posição do Reboque');
         mapa.setView(reboquePos, 13);
     }
-    // Menu, lightbox, etc. (seu código existente pode permanecer)
     console.log("✅ Tudo pronto!");
 });

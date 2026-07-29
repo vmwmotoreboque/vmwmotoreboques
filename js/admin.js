@@ -1,5 +1,6 @@
 //==================================================
-// VMW MOTO-REBOQUES - ADMIN.JS (FINAL)
+// VMW MOTO-REBOQUES - ADMIN.JS (VERSÃO FINAL)
+// GPS NUNCA PARA - SESSÃO NUNCA EXPIROU
 //==================================================
 
 const SENHA = "vmw2026";
@@ -8,9 +9,42 @@ const API_URL = "https://vmw-config-api.vmwreboques.workers.dev";
 
 let watchId = null, gpsTimer = null;
 let ultimaLatEnviada = null, ultimaLonEnviada = null;
-const DIST_MIN = 100; // metros
+const DIST_MIN = 100;
 let contador = 0;
 let paginaVisivel = true;
+let keepAliveInterval = null;
+let tentativasReconexao = 0;
+const MAX_TENTATIVAS = 10;
+
+//==============================================
+// IMPEDIR SUSPENSÃO DA PÁGINA
+//==============================================
+
+if ('wakeLock' in navigator) {
+    let wakeLock = null;
+    async function solicitarWakeLock() {
+        try {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log("💡 WakeLock ativado - tela não vai apagar!");
+        } catch (e) {
+            console.log("⚠️ WakeLock não disponível:", e);
+        }
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+        if (painel && painel.style.display === "block") {
+            solicitarWakeLock();
+        }
+    });
+    document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && painel && painel.style.display === "block") {
+            solicitarWakeLock();
+        }
+    });
+}
+
+//==============================================
+// ELEMENTOS
+//==============================================
 
 const telaLogin = document.querySelector(".login");
 const painel = document.getElementById("painel");
@@ -21,6 +55,10 @@ const btnSair = document.getElementById("sair");
 const btnSalvar = document.getElementById("salvar");
 const btnAtualizar = document.getElementById("atualizarLocalizacao");
 const statusGPS = document.getElementById("statusGPS");
+
+//==============================================
+// FUNÇÕES AUXILIARES
+//==============================================
 
 function distanciaMetros(lat1, lon1, lat2, lon2) {
     const R = 6371000;
@@ -52,7 +90,8 @@ async function salvarCloudflare(lat, lon) {
             kmAcima40: document.getElementById("kmAcima40").value,
             cidade: localStorage.getItem("cidade") || "Belo Horizonte",
             latitude: lat,
-            longitude: lon
+            longitude: lon,
+            ultimaAtualizacao: new Date().toISOString()
         };
         const res = await fetch(API_URL, {
             method: "POST",
@@ -63,9 +102,10 @@ async function salvarCloudflare(lat, lon) {
         ultimaLatEnviada = lat;
         ultimaLonEnviada = lon;
         contador++;
+        localStorage.setItem("ultimaAtualizacaoGPS", Date.now().toString());
         const now = new Date().toLocaleTimeString("pt-BR");
         btnSalvar.innerHTML = `✅ Salvo em ${now} (${contador}x)`;
-        console.log(`📤 Salvo (${contador}x)`);
+        console.log(`📤 Salvo (${contador}x) - ${lat}, ${lon}`);
         return true;
     } catch (e) {
         console.error("Erro ao salvar:", e);
@@ -98,6 +138,7 @@ async function processarPosicao(pos) {
         statusGPS.innerHTML = `✅ GPS ativo (${now})`;
         statusGPS.style.color = "#1ecb5a";
     }
+    tentativasReconexao = 0;
     console.log(`📍 ${lat.toFixed(6)}, ${lon.toFixed(6)}`);
 }
 
@@ -143,19 +184,88 @@ function iniciarFallbackTimer() {
     console.log("⏱️ Fallback timer iniciado (30s)");
 }
 
+//==============================================
+// MANTER SESSÃO ATIVA (NUNCA DESLOGA)
+//==============================================
+
+function manterSessaoAtiva() {
+    if (keepAliveInterval) clearInterval(keepAliveInterval);
+    
+    keepAliveInterval = setInterval(() => {
+        if (painel.style.display === "block") {
+            document.dispatchEvent(new Event('scroll'));
+            console.log("💓 Keep-alive: " + new Date().toLocaleTimeString());
+        }
+    }, 10000);
+}
+
+//==============================================
+// RECONEXÃO AUTOMÁTICA DO GPS
+//==============================================
+
+function verificarGPSAtivo() {
+    if (painel.style.display !== "block") return;
+    
+    const ultimaAtualizacao = localStorage.getItem("ultimaAtualizacaoGPS");
+    if (ultimaAtualizacao) {
+        const diff = (Date.now() - parseInt(ultimaAtualizacao)) / 1000;
+        if (diff > 60) {
+            console.warn(`⚠️ GPS parou há ${Math.round(diff)}s - Reiniciando...`);
+            reiniciarGPS();
+        }
+    }
+}
+
+function reiniciarGPS() {
+    console.log("🔄 Reiniciando GPS...");
+    if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+    }
+    tentativasReconexao++;
+    if (tentativasReconexao > MAX_TENTATIVAS) {
+        console.error("❌ Máximo de tentativas!");
+        tentativasReconexao = 0;
+        return;
+    }
+    setTimeout(() => {
+        iniciarWatchGPS();
+        navigator.geolocation.getCurrentPosition(
+            processarPosicao,
+            erroGPS,
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    }, 2000);
+}
+
+setInterval(verificarGPSAtivo, 30000);
+
+//==============================================
+// VISIBILIDADE DA PÁGINA
+//==============================================
+
 document.addEventListener("visibilitychange", () => {
     paginaVisivel = !document.hidden;
     if (paginaVisivel) {
-        console.log("📱 Página visível - reiniciando GPS");
+        console.log("📱 Página visível - verificando GPS");
         if (watchId !== null) {
             navigator.geolocation.clearWatch(watchId);
             watchId = null;
         }
         iniciarWatchGPS();
+        navigator.geolocation.getCurrentPosition(
+            processarPosicao,
+            erroGPS,
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
     } else {
         console.log("📱 Página oculta - GPS continua em background");
     }
 });
+
+//==============================================
+// CARREGAR CONFIGURAÇÕES
+//==============================================
 
 function carregarConfiguracoes() {
     document.getElementById("ate20").value = localStorage.getItem("ate20") || 120;
@@ -167,31 +277,64 @@ function carregarConfiguracoes() {
     document.getElementById("lon").innerHTML = localStorage.getItem("longitude") || "--";
 }
 
+//==============================================
+// LOGIN (NUNCA DESLOGA)
+//==============================================
+
 btnEntrar.addEventListener("click", () => {
     if (campoSenha.value === SENHA) {
         telaLogin.style.display = "none";
         painel.style.display = "block";
         erro.style.display = "none";
+        
         carregarConfiguracoes();
         iniciarWatchGPS();
         iniciarFallbackTimer();
+        manterSessaoAtiva();
+        
+        if ('wakeLock' in navigator) {
+            navigator.wakeLock.request('screen').then(() => {
+                console.log("💡 Tela não vai apagar!");
+            }).catch(() => {});
+        }
+        
         verificarStatus();
+        console.log("🔓 Login efetuado - GPS NUNCA PARA!");
     } else {
         erro.style.display = "block";
         campoSenha.value = "";
         campoSenha.focus();
     }
 });
+
 campoSenha.addEventListener("keypress", (e) => { if (e.key === "Enter") btnEntrar.click(); });
 
+//==============================================
+// SAIR (limpa tudo)
+//==============================================
+
 btnSair.addEventListener("click", () => {
-    if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-    if (gpsTimer) { clearInterval(gpsTimer); gpsTimer = null; }
+    if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+    }
+    if (gpsTimer) {
+        clearInterval(gpsTimer);
+        gpsTimer = null;
+    }
+    if (keepAliveInterval) {
+        clearInterval(keepAliveInterval);
+        keepAliveInterval = null;
+    }
     painel.style.display = "none";
     telaLogin.style.display = "flex";
     campoSenha.value = "";
     console.log("🔒 Sessão encerrada");
 });
+
+//==============================================
+// EVENTOS
+//==============================================
 
 btnAtualizar.addEventListener("click", () => {
     btnAtualizar.disabled = true;
@@ -211,8 +354,12 @@ btnSalvar.addEventListener("click", async () => {
         return;
     }
     const ok = await salvarCloudflare(lat, lon);
-    alert(ok ? "✅ Salvo!" : "❌ Erro ao salvar.");
+    alert(ok ? "✅ Salvo na Cloudflare!" : "❌ Erro ao salvar.");
 });
+
+//==============================================
+// STATUS CLOUDFLARE
+//==============================================
 
 async function verificarStatus() {
     try {
@@ -231,4 +378,4 @@ async function verificarStatus() {
 }
 setInterval(verificarStatus, 60000);
 
-console.log("✅ ADMIN.JS FINAL CARREGADO!");
+console.log("✅ ADMIN.JS FINAL - GPS NUNCA PARA!");
