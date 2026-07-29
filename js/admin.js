@@ -1,46 +1,27 @@
 //==================================================
-// VMW MOTO-REBOQUES - ADMIN.JS (VERSÃO FINAL)
-// GPS NUNCA PARA - SESSÃO NUNCA EXPIROU
+// VMW MOTO-REBOQUES - ADMIN.JS (ULTRA POWER)
+// GPS NUNCA PARA - NUNCA DESLOGA
 //==================================================
 
 const SENHA = "vmw2026";
 const API_KEY = "1c1bd45c2e5a431b8e45a47d2c57d950";
 const API_URL = "https://vmw-config-api.vmwreboques.workers.dev";
 
-let watchId = null, gpsTimer = null;
-let ultimaLatEnviada = null, ultimaLonEnviada = null;
-const DIST_MIN = 100;
-let contador = 0;
-let paginaVisivel = true;
+//==============================================
+// VARIÁVEIS GLOBAIS
+//==============================================
+
+let watchId = null;
+let gpsTimer = null;
 let keepAliveInterval = null;
+let ultimaLatEnviada = null;
+let ultimaLonEnviada = null;
+let contador = 0;
+const DIST_MIN = 50; // 50 metros (mais sensível)
 let tentativasReconexao = 0;
-const MAX_TENTATIVAS = 10;
-
-//==============================================
-// IMPEDIR SUSPENSÃO DA PÁGINA
-//==============================================
-
-if ('wakeLock' in navigator) {
-    let wakeLock = null;
-    async function solicitarWakeLock() {
-        try {
-            wakeLock = await navigator.wakeLock.request('screen');
-            console.log("💡 WakeLock ativado - tela não vai apagar!");
-        } catch (e) {
-            console.log("⚠️ WakeLock não disponível:", e);
-        }
-    }
-    document.addEventListener('DOMContentLoaded', () => {
-        if (painel && painel.style.display === "block") {
-            solicitarWakeLock();
-        }
-    });
-    document.addEventListener("visibilitychange", () => {
-        if (!document.hidden && painel && painel.style.display === "block") {
-            solicitarWakeLock();
-        }
-    });
-}
+const MAX_TENTATIVAS = 20;
+let ultimoPing = Date.now();
+let isPageVisible = true;
 
 //==============================================
 // ELEMENTOS
@@ -57,16 +38,20 @@ const btnAtualizar = document.getElementById("atualizarLocalizacao");
 const statusGPS = document.getElementById("statusGPS");
 
 //==============================================
-// FUNÇÕES AUXILIARES
+// FUNÇÃO: DISTÂNCIA EM METROS
 //==============================================
 
 function distanciaMetros(lat1, lon1, lat2, lon2) {
     const R = 6371000;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
+
+//==============================================
+// FUNÇÃO: BUSCAR CIDADE
+//==============================================
 
 async function buscarCidade(lat, lon) {
     try {
@@ -80,6 +65,10 @@ async function buscarCidade(lat, lon) {
         localStorage.setItem("cidade", cidade);
     } catch (e) { console.log("Erro cidade:", e); }
 }
+
+//==============================================
+// FUNÇÃO: SALVAR NA CLOUDFLARE
+//==============================================
 
 async function salvarCloudflare(lat, lon) {
     try {
@@ -113,16 +102,26 @@ async function salvarCloudflare(lat, lon) {
     }
 }
 
+//==============================================
+// FUNÇÃO: PROCESSAR POSIÇÃO (PRINCIPAL)
+//==============================================
+
 async function processarPosicao(pos) {
     const lat = pos.coords.latitude;
     const lon = pos.coords.longitude;
+    
+    // Atualizar UI
     document.getElementById("lat").innerHTML = lat.toFixed(6);
     document.getElementById("lon").innerHTML = lon.toFixed(6);
     localStorage.setItem("latitude", lat);
     localStorage.setItem("longitude", lon);
+    
+    // Salvar localmente a cada 5 segundos (backup)
+    localStorage.setItem("ultimaPosicao", JSON.stringify({ lat, lon, hora: new Date().toISOString() }));
 
     await buscarCidade(lat, lon);
 
+    // Verificar se deve enviar para Cloudflare
     let enviar = false;
     if (ultimaLatEnviada === null || ultimaLonEnviada === null) {
         enviar = true;
@@ -130,6 +129,7 @@ async function processarPosicao(pos) {
         const dist = distanciaMetros(ultimaLatEnviada, ultimaLonEnviada, lat, lon);
         if (dist >= DIST_MIN) enviar = true;
     }
+    
     if (enviar) await salvarCloudflare(lat, lon);
 
     const now = new Date().toLocaleTimeString("pt-BR");
@@ -139,8 +139,13 @@ async function processarPosicao(pos) {
         statusGPS.style.color = "#1ecb5a";
     }
     tentativasReconexao = 0;
+    ultimoPing = Date.now();
     console.log(`📍 ${lat.toFixed(6)}, ${lon.toFixed(6)}`);
 }
+
+//==============================================
+// FUNÇÃO: ERRO GPS
+//==============================================
 
 function erroGPS(err) {
     console.error("Erro GPS:", err);
@@ -150,23 +155,40 @@ function erroGPS(err) {
         statusGPS.style.color = "#ff6b00";
     }
     btnAtualizar.disabled = false;
+    // Tentar reconectar após erro
+    setTimeout(reiniciarGPS, 3000);
 }
+
+//==============================================
+// FUNÇÃO: INICIAR WATCH GPS
+//==============================================
 
 function iniciarWatchGPS() {
     if (!navigator.geolocation) {
         alert("Seu navegador não suporta geolocalização.");
         return;
     }
+    
+    // Parar watch anterior
     if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
+        try {
+            navigator.geolocation.clearWatch(watchId);
+        } catch(e) {}
         watchId = null;
     }
+    
+    // Iniciar novo watch
     watchId = navigator.geolocation.watchPosition(
         processarPosicao,
         erroGPS,
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
+        { 
+            enableHighAccuracy: true, 
+            timeout: 10000, 
+            maximumAge: 3000  // 3 segundos (mais sensível)
+        }
     );
-    console.log("🔄 Watch GPS iniciado");
+    
+    console.log("🔄 Watch GPS iniciado (ID:" + watchId + ")");
     if (statusGPS) {
         statusGPS.innerHTML = "🔄 Aguardando GPS...";
         statusGPS.style.color = "#ffaa00";
@@ -174,97 +196,162 @@ function iniciarWatchGPS() {
     btnAtualizar.innerHTML = "🔄 GPS em execução";
 }
 
-function iniciarFallbackTimer() {
-    if (gpsTimer) clearInterval(gpsTimer);
-    gpsTimer = setInterval(() => {
-        if (!paginaVisivel) return;
-        if (watchId !== null) return;
-        navigator.geolocation.getCurrentPosition(processarPosicao, erroGPS, { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 });
-    }, 30000);
-    console.log("⏱️ Fallback timer iniciado (30s)");
+//==============================================
+// FUNÇÃO: REINICIAR GPS
+//==============================================
+
+function reiniciarGPS() {
+    console.log("🔄 Reiniciando GPS... (tentativa " + (tentativasReconexao + 1) + ")");
+    
+    if (watchId !== null) {
+        try {
+            navigator.geolocation.clearWatch(watchId);
+        } catch(e) {}
+        watchId = null;
+    }
+    
+    tentativasReconexao++;
+    if (tentativasReconexao > MAX_TENTATIVAS) {
+        console.error("❌ Máximo de tentativas! Usando fallback...");
+        tentativasReconexao = 0;
+        // Usar fallback com getCurrentPosition
+        if (gpsTimer) clearInterval(gpsTimer);
+        gpsTimer = setInterval(() => {
+            navigator.geolocation.getCurrentPosition(processarPosicao, erroGPS, { 
+                enableHighAccuracy: true, 
+                timeout: 10000, 
+                maximumAge: 3000 
+            });
+        }, 5000);
+        return;
+    }
+    
+    setTimeout(() => {
+        iniciarWatchGPS();
+        // Forçar uma atualização imediata
+        navigator.geolocation.getCurrentPosition(processarPosicao, erroGPS, { 
+            enableHighAccuracy: true, 
+            timeout: 10000, 
+            maximumAge: 0 
+        });
+    }, 2000);
 }
 
 //==============================================
-// MANTER SESSÃO ATIVA (NUNCA DESLOGA)
+// FUNÇÃO: FALLBACK TIMER (SALVA-GUARDA)
 //==============================================
 
-function manterSessaoAtiva() {
+function iniciarFallbackTimer() {
+    if (gpsTimer) clearInterval(gpsTimer);
+    
+    gpsTimer = setInterval(() => {
+        // Se o watch está ativo, não faz nada
+        if (watchId !== null) return;
+        if (!isPageVisible) return;
+        
+        console.log("⏱️ Fallback: obtendo posição...");
+        navigator.geolocation.getCurrentPosition(
+            processarPosicao, 
+            erroGPS, 
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+        );
+    }, 10000); // A cada 10 segundos (mais frequente)
+    
+    console.log("⏱️ Fallback timer iniciado (10s)");
+}
+
+//==============================================
+// FUNÇÃO: KEEP-ALIVE (NUNCA DESLOGA)
+//==============================================
+
+function iniciarKeepAlive() {
     if (keepAliveInterval) clearInterval(keepAliveInterval);
     
     keepAliveInterval = setInterval(() => {
         if (painel.style.display === "block") {
+            // 1. Disparar evento de scroll (mantém a página "ativa")
             document.dispatchEvent(new Event('scroll'));
+            
+            // 2. Verificar se o GPS está rodando
+            const agora = Date.now();
+            if (agora - ultimoPing > 30000) {
+                console.warn("⚠️ GPS pode ter parado! Verificando...");
+                if (watchId === null) {
+                    reiniciarGPS();
+                } else {
+                    // Forçar atualização
+                    navigator.geolocation.getCurrentPosition(processarPosicao, erroGPS, {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    });
+                }
+            }
+            
+            // 3. Tentar manter a tela ligada (se possível)
+            if ('wakeLock' in navigator) {
+                navigator.wakeLock.request('screen').catch(() => {});
+            }
+            
             console.log("💓 Keep-alive: " + new Date().toLocaleTimeString());
         }
-    }, 10000);
+    }, 5000); // A CADA 5 SEGUNDOS (mais agressivo)
+    
+    console.log("💓 Keep-alive iniciado (5s)");
 }
 
 //==============================================
-// RECONEXÃO AUTOMÁTICA DO GPS
+// FUNÇÃO: RESTAURAR SESSÃO (SE PERDER)
 //==============================================
 
-function verificarGPSAtivo() {
-    if (painel.style.display !== "block") return;
-    
-    const ultimaAtualizacao = localStorage.getItem("ultimaAtualizacaoGPS");
-    if (ultimaAtualizacao) {
-        const diff = (Date.now() - parseInt(ultimaAtualizacao)) / 1000;
-        if (diff > 60) {
-            console.warn(`⚠️ GPS parou há ${Math.round(diff)}s - Reiniciando...`);
-            reiniciarGPS();
+function restaurarSessao() {
+    // Verificar se já estava logado
+    const sessaoAtiva = localStorage.getItem("sessaoAtiva");
+    if (sessaoAtiva === "true") {
+        console.log("🔄 Restaurando sessão anterior...");
+        // Tentar reativar o GPS
+        if (painel.style.display === "block") {
+            iniciarWatchGPS();
         }
     }
 }
 
-function reiniciarGPS() {
-    console.log("🔄 Reiniciando GPS...");
-    if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-        watchId = null;
-    }
-    tentativasReconexao++;
-    if (tentativasReconexao > MAX_TENTATIVAS) {
-        console.error("❌ Máximo de tentativas!");
-        tentativasReconexao = 0;
-        return;
-    }
-    setTimeout(() => {
-        iniciarWatchGPS();
-        navigator.geolocation.getCurrentPosition(
-            processarPosicao,
-            erroGPS,
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
-    }, 2000);
+//==============================================
+// FUNÇÃO: SALVAR SESSÃO
+//==============================================
+
+function salvarSessao() {
+    localStorage.setItem("sessaoAtiva", "true");
+    localStorage.setItem("ultimaSessao", new Date().toISOString());
 }
 
-setInterval(verificarGPSAtivo, 30000);
-
 //==============================================
-// VISIBILIDADE DA PÁGINA
+// EVENTO: VISIBILIDADE DA PÁGINA
 //==============================================
 
 document.addEventListener("visibilitychange", () => {
-    paginaVisivel = !document.hidden;
-    if (paginaVisivel) {
+    isPageVisible = !document.hidden;
+    
+    if (isPageVisible) {
         console.log("📱 Página visível - verificando GPS");
-        if (watchId !== null) {
-            navigator.geolocation.clearWatch(watchId);
-            watchId = null;
+        // Verificar se o GPS está rodando
+        if (watchId === null) {
+            reiniciarGPS();
+        } else {
+            // Forçar atualização
+            navigator.geolocation.getCurrentPosition(processarPosicao, erroGPS, {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            });
         }
-        iniciarWatchGPS();
-        navigator.geolocation.getCurrentPosition(
-            processarPosicao,
-            erroGPS,
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
     } else {
         console.log("📱 Página oculta - GPS continua em background");
     }
 });
 
 //==============================================
-// CARREGAR CONFIGURAÇÕES
+// FUNÇÃO: CARREGAR CONFIGURAÇÕES
 //==============================================
 
 function carregarConfiguracoes() {
@@ -278,87 +365,7 @@ function carregarConfiguracoes() {
 }
 
 //==============================================
-// LOGIN (NUNCA DESLOGA)
-//==============================================
-
-btnEntrar.addEventListener("click", () => {
-    if (campoSenha.value === SENHA) {
-        telaLogin.style.display = "none";
-        painel.style.display = "block";
-        erro.style.display = "none";
-        
-        carregarConfiguracoes();
-        iniciarWatchGPS();
-        iniciarFallbackTimer();
-        manterSessaoAtiva();
-        
-        if ('wakeLock' in navigator) {
-            navigator.wakeLock.request('screen').then(() => {
-                console.log("💡 Tela não vai apagar!");
-            }).catch(() => {});
-        }
-        
-        verificarStatus();
-        console.log("🔓 Login efetuado - GPS NUNCA PARA!");
-    } else {
-        erro.style.display = "block";
-        campoSenha.value = "";
-        campoSenha.focus();
-    }
-});
-
-campoSenha.addEventListener("keypress", (e) => { if (e.key === "Enter") btnEntrar.click(); });
-
-//==============================================
-// SAIR (limpa tudo)
-//==============================================
-
-btnSair.addEventListener("click", () => {
-    if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-        watchId = null;
-    }
-    if (gpsTimer) {
-        clearInterval(gpsTimer);
-        gpsTimer = null;
-    }
-    if (keepAliveInterval) {
-        clearInterval(keepAliveInterval);
-        keepAliveInterval = null;
-    }
-    painel.style.display = "none";
-    telaLogin.style.display = "flex";
-    campoSenha.value = "";
-    console.log("🔒 Sessão encerrada");
-});
-
-//==============================================
-// EVENTOS
-//==============================================
-
-btnAtualizar.addEventListener("click", () => {
-    btnAtualizar.disabled = true;
-    btnAtualizar.innerHTML = "⏳ Obtendo...";
-    navigator.geolocation.getCurrentPosition(
-        (pos) => { processarPosicao(pos); btnAtualizar.disabled = false; },
-        (err) => { erroGPS(err); btnAtualizar.disabled = false; },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
-});
-
-btnSalvar.addEventListener("click", async () => {
-    const lat = parseFloat(localStorage.getItem("latitude"));
-    const lon = parseFloat(localStorage.getItem("longitude"));
-    if (isNaN(lat) || isNaN(lon)) {
-        alert("⚠️ Localização não disponível. Aguarde o GPS.");
-        return;
-    }
-    const ok = await salvarCloudflare(lat, lon);
-    alert(ok ? "✅ Salvo na Cloudflare!" : "❌ Erro ao salvar.");
-});
-
-//==============================================
-// STATUS CLOUDFLARE
+// FUNÇÃO: VERIFICAR STATUS CLOUDFLARE
 //==============================================
 
 async function verificarStatus() {
@@ -378,4 +385,147 @@ async function verificarStatus() {
 }
 setInterval(verificarStatus, 60000);
 
-console.log("✅ ADMIN.JS FINAL - GPS NUNCA PARA!");
+//==============================================
+// EVENTO: LOGIN
+//==============================================
+
+btnEntrar.addEventListener("click", () => {
+    if (campoSenha.value === SENHA) {
+        telaLogin.style.display = "none";
+        painel.style.display = "block";
+        erro.style.display = "none";
+        
+        carregarConfiguracoes();
+        iniciarWatchGPS();
+        iniciarFallbackTimer();
+        iniciarKeepAlive();
+        salvarSessao();
+        
+        // WakeLock
+        if ('wakeLock' in navigator) {
+            navigator.wakeLock.request('screen').then(() => {
+                console.log("💡 Tela não vai apagar!");
+            }).catch(() => {});
+        }
+        
+        // Tentar restaurar posição anterior
+        const ultimaPos = localStorage.getItem("ultimaPosicao");
+        if (ultimaPos) {
+            try {
+                const pos = JSON.parse(ultimaPos);
+                document.getElementById("lat").innerHTML = pos.lat.toFixed(6);
+                document.getElementById("lon").innerHTML = pos.lon.toFixed(6);
+            } catch(e) {}
+        }
+        
+        verificarStatus();
+        console.log("🔓 Login efetuado - GPS NUNCA PARA!");
+        
+        // Verificar se o GPS está rodando após 5 segundos
+        setTimeout(() => {
+            if (watchId === null) {
+                console.warn("⚠️ GPS não iniciou! Tentando novamente...");
+                reiniciarGPS();
+            }
+        }, 5000);
+        
+    } else {
+        erro.style.display = "block";
+        campoSenha.value = "";
+        campoSenha.focus();
+    }
+});
+
+campoSenha.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") btnEntrar.click();
+});
+
+//==============================================
+// EVENTO: SAIR
+//==============================================
+
+btnSair.addEventListener("click", () => {
+    if (watchId !== null) {
+        try {
+            navigator.geolocation.clearWatch(watchId);
+        } catch(e) {}
+        watchId = null;
+    }
+    if (gpsTimer) {
+        clearInterval(gpsTimer);
+        gpsTimer = null;
+    }
+    if (keepAliveInterval) {
+        clearInterval(keepAliveInterval);
+        keepAliveInterval = null;
+    }
+    localStorage.setItem("sessaoAtiva", "false");
+    painel.style.display = "none";
+    telaLogin.style.display = "flex";
+    campoSenha.value = "";
+    console.log("🔒 Sessão encerrada");
+});
+
+//==============================================
+// EVENTO: ATUALIZAR LOCALIZAÇÃO (MANUAL)
+//==============================================
+
+btnAtualizar.addEventListener("click", () => {
+    btnAtualizar.disabled = true;
+    btnAtualizar.innerHTML = "⏳ Obtendo...";
+    navigator.geolocation.getCurrentPosition(
+        (pos) => { 
+            processarPosicao(pos); 
+            btnAtualizar.disabled = false;
+            btnAtualizar.innerHTML = "✅ Atualizado!";
+            setTimeout(() => {
+                btnAtualizar.innerHTML = "🔄 Atualizar localização";
+            }, 3000);
+        },
+        (err) => { 
+            erroGPS(err); 
+            btnAtualizar.disabled = false;
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+});
+
+//==============================================
+// EVENTO: SALVAR CONFIGURAÇÕES
+//==============================================
+
+btnSalvar.addEventListener("click", async () => {
+    const lat = parseFloat(localStorage.getItem("latitude"));
+    const lon = parseFloat(localStorage.getItem("longitude"));
+    if (isNaN(lat) || isNaN(lon)) {
+        alert("⚠️ Localização não disponível. Aguarde o GPS.");
+        return;
+    }
+    const ok = await salvarCloudflare(lat, lon);
+    alert(ok ? "✅ Salvo na Cloudflare!" : "❌ Erro ao salvar.");
+});
+
+//==============================================
+// RESTAURAR SESSÃO (AO CARREGAR A PÁGINA)
+//==============================================
+
+document.addEventListener("DOMContentLoaded", () => {
+    restaurarSessao();
+    console.log("✅ ADMIN.JS ULTRA POWER CARREGADO!");
+});
+
+//==============================================
+// TIMER: VERIFICAR SE O GPS ESTÁ ATIVO (A CADA 15s)
+//==============================================
+
+setInterval(() => {
+    if (painel.style.display === "block") {
+        const agora = Date.now();
+        if (agora - ultimoPing > 45000) { // 45 segundos sem atualização
+            console.warn("⚠️ GPS parou há muito tempo! Reiniciando...");
+            reiniciarGPS();
+        }
+    }
+}, 15000);
+
+console.log("✅ ADMIN.JS ULTRA POWER - GPS NUNCA PARA!");
