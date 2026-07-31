@@ -1925,3 +1925,70 @@ bottom:92px;
 }
 
 }
+/*==========================================
+MARCADORES PERSONALIZADOS - ESTILO GOOGLE MAPS
+==========================================*/
+
+/* Animação de pulso para o marcador do reboque */
+@keyframes pulse-blue {
+    0% {
+        box-shadow: 0 0 0 0 rgba(26, 115, 232, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 15px rgba(26, 115, 232, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(26, 115, 232, 0);
+    }
+}
+
+/* Marcador de origem (verde) */
+.custom-marker-origem {
+    background: transparent !important;
+    border: none !important;
+}
+
+/* Marcador de destino (vermelho) */
+.custom-marker-destino {
+    background: transparent !important;
+    border: none !important;
+}
+
+/* Marcador do reboque (azul com animação) */
+.custom-marker-reboque {
+    background: transparent !important;
+    border: none !important;
+}
+
+/* Efeito hover nos marcadores */
+.custom-marker-origem:hover,
+.custom-marker-destino:hover,
+.custom-marker-reboque:hover {
+    transform: scale(1.1);
+    transition: transform 0.2s ease;
+    cursor: pointer;
+}
+
+/* Estilização do popup do mapa */
+.leaflet-popup-content-wrapper {
+    border-radius: 12px !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+    font-family: 'Poppins', sans-serif !important;
+}
+
+.leaflet-popup-tip {
+    background: white !important;
+}
+
+/* Sombra do marcador (efeito 3D) */
+.marker-shadow {
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 8px;
+    background: rgba(0,0,0,0.15);
+    border-radius: 50%;
+    filter: blur(3px);
+}

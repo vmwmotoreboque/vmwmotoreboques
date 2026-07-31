@@ -1,5 +1,6 @@
 //==================================================
-// VMW MOTO-REBOQUES - SCRIPT.JS (FINAL)
+// VMW MOTO-REBOQUES - SCRIPT.JS (COMPLETO)
+// COM MARCADORES ESTILO GOOGLE MAPS
 //==================================================
 
 const API_KEY = "1c1bd45c2e5a431b8e45a47d2c57d950";
@@ -32,7 +33,10 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "© OpenStreetMap"
 }).addTo(mapa);
 
-let linhaRota = null, marcadorOrigem = null, marcadorDestino = null, marcadorReboque = null;
+let linhaRota = null;
+let marcadorOrigem = null;
+let marcadorDestino = null;
+let marcadorReboque = null;
 
 //==============================================
 // ELEMENTOS
@@ -95,18 +99,194 @@ async function calcularRota(origem, destino) {
     return dados;
 }
 
+//==============================================
+// DESENHAR MAPA COM MARCADORES ESTILO GOOGLE
+//==============================================
+
 function desenharMapa(rota, origem, destino, reboquePos) {
-    [linhaRota, marcadorOrigem, marcadorDestino, marcadorReboque].forEach(l => { if (l) mapa.removeLayer(l); });
-    linhaRota = L.geoJSON(rota, { style: { color: "#d60000", weight: 6 } }).addTo(mapa);
-    marcadorOrigem = L.marker(origem, { icon: L.divIcon({ html: '🟢', iconSize: [30,30] }) }).addTo(mapa).bindPopup('📍 Retirada');
-    marcadorDestino = L.marker(destino, { icon: L.divIcon({ html: '🔴', iconSize: [30,30] }) }).addTo(mapa).bindPopup('🏁 Entrega');
+    // Limpar layers anteriores
+    if (linhaRota) { mapa.removeLayer(linhaRota); }
+    if (marcadorOrigem) { mapa.removeLayer(marcadorOrigem); }
+    if (marcadorDestino) { mapa.removeLayer(marcadorDestino); }
+    if (marcadorReboque) { mapa.removeLayer(marcadorReboque); }
+
+    // Desenhar rota
+    linhaRota = L.geoJSON(rota, {
+        style: { 
+            color: "#d60000", 
+            weight: 5,
+            opacity: 0.9
+        }
+    }).addTo(mapa);
+
+    // ===========================================
+    // MARCADOR DE ORIGEM (VERDE)
+    // ===========================================
+    const iconeOrigem = L.divIcon({
+        className: 'custom-marker-origem',
+        html: `
+            <div style="
+                background: #4CAF50;
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 3px solid white;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+                position: relative;
+            ">
+                <div style="
+                    width: 12px;
+                    height: 12px;
+                    background: white;
+                    border-radius: 50%;
+                    border: 2px solid #4CAF50;
+                "></div>
+                <div style="
+                    position: absolute;
+                    bottom: -12px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 0;
+                    height: 0;
+                    border-left: 8px solid transparent;
+                    border-right: 8px solid transparent;
+                    border-top: 12px solid #4CAF50;
+                "></div>
+            </div>
+        `,
+        iconSize: [36, 48],
+        iconAnchor: [18, 48],
+        popupAnchor: [0, -45]
+    });
+
+    // ===========================================
+    // MARCADOR DE DESTINO (VERMELHO)
+    // ===========================================
+    const iconeDestino = L.divIcon({
+        className: 'custom-marker-destino',
+        html: `
+            <div style="
+                background: #d60000;
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 3px solid white;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+                position: relative;
+            ">
+                <div style="
+                    width: 12px;
+                    height: 12px;
+                    background: white;
+                    border-radius: 50%;
+                    border: 2px solid #d60000;
+                "></div>
+                <div style="
+                    position: absolute;
+                    bottom: -12px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 0;
+                    height: 0;
+                    border-left: 8px solid transparent;
+                    border-right: 8px solid transparent;
+                    border-top: 12px solid #d60000;
+                "></div>
+            </div>
+        `,
+        iconSize: [36, 48],
+        iconAnchor: [18, 48],
+        popupAnchor: [0, -45]
+    });
+
+    // ===========================================
+    // MARCADOR DO REBOQUE (AZUL COM ANIMAÇÃO)
+    // ===========================================
+    const iconeReboque = L.divIcon({
+        className: 'custom-marker-reboque',
+        html: `
+            <div style="
+                background: #1a73e8;
+                width: 44px;
+                height: 44px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 3px solid white;
+                box-shadow: 0 2px 15px rgba(26, 115, 232, 0.5);
+                position: relative;
+                animation: pulse-blue 1.5s infinite;
+            ">
+                <i class="fa-solid fa-truck" style="color: white; font-size: 20px;"></i>
+                <div style="
+                    position: absolute;
+                    bottom: -12px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 0;
+                    height: 0;
+                    border-left: 8px solid transparent;
+                    border-right: 8px solid transparent;
+                    border-top: 12px solid #1a73e8;
+                "></div>
+            </div>
+        `,
+        iconSize: [44, 56],
+        iconAnchor: [22, 56],
+        popupAnchor: [0, -50]
+    });
+
+    // Adicionar marcadores ao mapa
+    marcadorOrigem = L.marker(origem, { icon: iconeOrigem })
+        .addTo(mapa)
+        .bindPopup(`
+            <div style="font-family: 'Poppins', sans-serif; padding: 5px;">
+                <strong style="color: #4CAF50;">📍 Ponto de Retirada</strong>
+                <br>
+                <span style="font-size: 12px; color: #666;">${retirada.value || 'Origem'}</span>
+            </div>
+        `);
+
+    marcadorDestino = L.marker(destino, { icon: iconeDestino })
+        .addTo(mapa)
+        .bindPopup(`
+            <div style="font-family: 'Poppins', sans-serif; padding: 5px;">
+                <strong style="color: #d60000;">🏁 Ponto de Entrega</strong>
+                <br>
+                <span style="font-size: 12px; color: #666;">${entrega.value || 'Destino'}</span>
+            </div>
+        `);
+
     if (reboquePos) {
-        marcadorReboque = L.marker(reboquePos, { icon: L.divIcon({ html: '🚚', iconSize: [35,35] }) }).addTo(mapa).bindPopup('📍 Posição do Reboque');
+        marcadorReboque = L.marker(reboquePos, { icon: iconeReboque })
+            .addTo(mapa)
+            .bindPopup(`
+                <div style="font-family: 'Poppins', sans-serif; padding: 5px;">
+                    <strong style="color: #1a73e8;">🚚 Posição do Reboque</strong>
+                    <br>
+                    <span style="font-size: 12px; color: #666;">Atualizado em tempo real</span>
+                </div>
+            `);
     }
+
+    // Ajustar zoom para mostrar todos os marcadores
     const bounds = linhaRota.getBounds();
-    if (reboquePos) bounds.extend(reboquePos);
-    mapa.fitBounds(bounds);
+    if (reboquePos) {
+        bounds.extend(reboquePos);
+    }
+    mapa.fitBounds(bounds, { padding: [50, 50] });
 }
+
+//==============================================
+// CALCULAR PREÇO VMW
+//==============================================
 
 function calcularPrecoVMW(distanciaTotal) {
     const ate20 = parseFloat(localStorage.getItem("ate20") || 120);
@@ -117,6 +297,10 @@ function calcularPrecoVMW(distanciaTotal) {
     if (distanciaTotal <= 40) return ate20 + ((distanciaTotal - 20) * km20a40);
     return base40 + ((distanciaTotal - 40) * kmAcima40);
 }
+
+//==============================================
+// CALCULAR ORÇAMENTO
+//==============================================
 
 async function calcularOrcamento() {
     try {
@@ -217,10 +401,56 @@ document.getElementById("formOrcamento").addEventListener("submit", (e) => { e.p
 document.addEventListener("DOMContentLoaded", async () => {
     console.log("🚀 Inicializando VMW...");
     await carregarConfiguracoesCloudflare();
+
     const reboquePos = obterLocalizacaoReboque();
-    if (reboquePos) {
-        L.marker(reboquePos, { icon: L.divIcon({ html: '🚚', iconSize: [40,40] }) }).addTo(mapa).bindPopup('📍 Posição do Reboque');
+    if (reboquePos && mapa) {
+        // Criar marcador bonito para a posição inicial do reboque
+        const iconeInicial = L.divIcon({
+            className: 'custom-marker-reboque',
+            html: `
+                <div style="
+                    background: #1a73e8;
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: 3px solid white;
+                    box-shadow: 0 2px 15px rgba(26, 115, 232, 0.5);
+                    position: relative;
+                    animation: pulse-blue 1.5s infinite;
+                ">
+                    <i class="fa-solid fa-truck" style="color: white; font-size: 20px;"></i>
+                    <div style="
+                        position: absolute;
+                        bottom: -12px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        width: 0;
+                        height: 0;
+                        border-left: 8px solid transparent;
+                        border-right: 8px solid transparent;
+                        border-top: 12px solid #1a73e8;
+                    "></div>
+                </div>
+            `,
+            iconSize: [44, 56],
+            iconAnchor: [22, 56],
+            popupAnchor: [0, -50]
+        });
+
+        L.marker(reboquePos, { icon: iconeInicial })
+            .addTo(mapa)
+            .bindPopup(`
+                <div style="font-family: 'Poppins', sans-serif; padding: 5px;">
+                    <strong style="color: #1a73e8;">🚚 Posição do Reboque</strong>
+                    <br>
+                    <span style="font-size: 12px; color: #666;">Localização atual</span>
+                </div>
+            `);
         mapa.setView(reboquePos, 13);
     }
+
     console.log("✅ Tudo pronto!");
 });
