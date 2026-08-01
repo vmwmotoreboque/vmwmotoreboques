@@ -1,9 +1,8 @@
-name: Build Android APK
+name: Build APK
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -11,35 +10,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Baixar código
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Instalar Java 17
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+          cache: gradle
 
-      - name: Instalar Node.js
+      - name: Setup Node 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
-      - name: Instalar dependências
+      - name: Install dependencies
         run: npm install
 
-      - name: Sincronizar Capacitor
+      - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Dar permissão ao Gradle
-        run: chmod +x android/gradlew
+      - name: Build Debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug
 
-      - name: Gerar APK
-        run: |
-          cd android
-          ./gradlew assembleDebug
-
-      - name: Publicar APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
