@@ -1,0 +1,9 @@
+{
+  "appId": "com.vwm.motoreboques",
+  "appName": "VWM Moto Reboques",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "useLegacyBridge": true
+  }
+}

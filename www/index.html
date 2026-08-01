@@ -928,6 +928,39 @@ target="_blank">
 
 <script src="js/script.js"></script>
 
+<script>
+    // ATALHO SECRETO PARA O ADMIN NO CELULAR
+    let adminTimer = 0;
+    document.addEventListener('click', function() {
+        adminTimer = 0; // Reseta o timer a cada clique
+    });
+
+    // Se a tela ficar parada por 3 segundos, toca 5 vezes na tela
+    setInterval(() => {
+        adminTimer++;
+        if (adminTimer >= 3) { // 3 segundos
+            // Se detectar 5 toques, vai para o admin
+            let toques = 0;
+            const handler = () => {
+                toques++;
+                if (toques === 5) {
+                    window.location.href = 'admin.html';
+                    document.removeEventListener('click', handler);
+                }
+            };
+            document.addEventListener('click', handler);
+            
+            // Reseta depois de 2 segundos se não completar
+            setTimeout(() => {
+                document.removeEventListener('click', handler);
+                adminTimer = 0;
+            }, 2000);
+            
+            adminTimer = 0;
+        }
+    }, 1000);
+</script>
+
 </body>
 
 </html>

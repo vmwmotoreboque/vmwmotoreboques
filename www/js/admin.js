@@ -529,3 +529,10 @@ setInterval(() => {
 }, 15000);
 
 console.log("✅ ADMIN.JS ULTRA POWER - GPS NUNCA PARA!");
+// Mantém a tela ligada enquanto estiver no admin
+if (window.location.pathname.includes('admin.html')) {
+    // Impede que a tela apague
+    setInterval(() => {
+        document.dispatchEvent(new Event('scroll'));
+    }, 3000);
+}
