@@ -10,40 +10,53 @@ import { Geolocation } from '@capacitor/geolocation';
 const API_URL = 'https://vmw-config-api.vmwreboques.workers.dev';
 
 //==============================================
-// FUNÇÃO: ENVIAR POSIÇÃO
+// FUNÇÃO: ENVIAR POSIÇÃO (VERSÃO ATUALIZADA)
 //==============================================
 
 async function enviarPosicao(position) {
     try {
-        const { latitude, longitude } = position.coords;
-        
+
+        const c = position.coords;
+
         const config = {
-            latitude: latitude,
-            longitude: longitude,
-            ate20: localStorage.getItem('ate20') || 120,
-            km20a40: localStorage.getItem('km20a40') || 2,
-            base40: localStorage.getItem('base40') || 150,
-            kmAcima40: localStorage.getItem('kmAcima40') || 2.5,
-            cidade: localStorage.getItem('cidade') || 'Belo Horizonte',
-            ultimaAtualizacao: new Date().toISOString()
+            latitude: c.latitude,
+            longitude: c.longitude,
+
+            velocidade: c.speed || 0,
+            direcao: c.heading || 0,
+            precisao: c.accuracy || 0,
+            altitude: c.altitude || 0,
+
+            status: "online",
+
+            ate20: Number(localStorage.getItem('ate20')) || 120,
+            km20a40: Number(localStorage.getItem('km20a40')) || 2,
+            base40: Number(localStorage.getItem('base40')) || 150,
+            kmAcima40: Number(localStorage.getItem('kmAcima40')) || 2.5,
+            cidade: localStorage.getItem('cidade') || 'Belo Horizonte'
         };
 
-        console.log('📤 Enviando:', latitude, longitude);
+        console.log("📤 GPS:", config);
 
         const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
             body: JSON.stringify(config)
         });
 
         if (response.ok) {
-            localStorage.setItem('latitude', latitude);
-            localStorage.setItem('longitude', longitude);
-            localStorage.setItem('ultimaAtualizacaoGPS', Date.now().toString());
-            console.log('✅ Enviado!');
+
+            localStorage.setItem("latitude", config.latitude);
+            localStorage.setItem("longitude", config.longitude);
+            localStorage.setItem("ultimaAtualizacaoGPS", Date.now());
+
+            console.log("✅ GPS enviado");
         }
-    } catch (error) {
-        console.error('❌ Erro:', error);
+
+    } catch (e) {
+        console.error(e);
     }
 }
 
@@ -64,13 +77,33 @@ async function iniciarRastreamento() {
             }
         }
 
-        // Watch Position
+        // Watch Position com filtro de duplicidade
+        let ultimaLatitude = null;
+        let ultimaLongitude = null;
+
         await Geolocation.watchPosition(
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            },
             async (position) => {
-                if (position && position.coords) {
-                    await enviarPosicao(position);
+
+                if (!position || !position.coords) return;
+
+                const { latitude, longitude } = position.coords;
+
+                if (
+                    ultimaLatitude === latitude &&
+                    ultimaLongitude === longitude
+                ) {
+                    return;
                 }
+
+                ultimaLatitude = latitude;
+                ultimaLongitude = longitude;
+
+                await enviarPosicao(position);
             }
         );
 

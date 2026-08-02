@@ -33,13 +33,18 @@ async function handleRequest(request) {
     if (request.method === 'POST') {
         try {
             const config = await request.json();
-            const required = ['ate20','km20a40','base40','kmAcima40','cidade','latitude','longitude'];
+            const required = ['ate20','km20a40','base40','kmAcima40','cidade','latitude','longitude','status'];
             for (const field of required) {
                 if (config[field] === undefined || config[field] === null) {
                     return new Response(JSON.stringify({ error: `Campo ${field} ausente` }), { status: 400, headers });
                 }
             }
             config.ultimaAtualizacao = new Date().toISOString();
+            config.velocidade = config.velocidade || 0;
+            config.direcao = config.direcao || 0;
+            config.precisao = config.precisao || 0;
+            config.altitude = config.altitude || 0;
+            config.status = config.status || "online";
             await VMV_CONFIG.put(CACHE_KEY, JSON.stringify(config));
             return new Response(JSON.stringify({ success: true, config }), { headers });
         } catch (e) {

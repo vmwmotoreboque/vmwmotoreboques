@@ -1,6 +1,26 @@
-# wrangler files
-.wrangler
-.dev.vars*
-!.dev.vars.example
+# Node
+node_modules/
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+
+# Capacitor
+android/capacitor-cordova-android-plugins/build/
+
+# Wrangler
+.wrangler/
+
+# Ambiente
 .env*
 !.env.example
+.dev.vars*
+!.dev.vars.example
+
+# Logs
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db
