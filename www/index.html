@@ -924,10 +924,14 @@ target="_blank">
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<!-- JAVASCRIPT -->
-
+<!-- ==========================================================
+JAVASCRIPT - APENAS O SCRIPT.JS (INTEGRADO COM GPS)
+=========================================================== -->
 <script src="js/script.js"></script>
 
+<!-- ==========================================================
+SCRIPT DE ADMIN (ATALHO SECRETO)
+=========================================================== -->
 <script>
     // ATALHO SECRETO PARA O ADMIN NO CELULAR
     let adminTimer = 0;
@@ -957,6 +961,22 @@ target="_blank">
             }, 2000);
             
             adminTimer = 0;
+        }
+    }, 1000);
+
+    // ==============================================
+    // VERIFICAÇÃO DE CARREGAMENTO DO SCRIPT.JS
+    // ==============================================
+    console.log("✅ Index.html carregado!");
+    console.log("📱 Verificando script.js...");
+
+    // Verifica se o script.js carregou corretamente
+    setTimeout(() => {
+        if (typeof mapa === 'undefined') {
+            console.error("❌ script.js NÃO carregou corretamente!");
+            console.error("⚠️ Verifique se o arquivo existe em: js/script.js");
+        } else {
+            console.log("✅ script.js carregado com sucesso!");
         }
     }, 1000);
 </script>
