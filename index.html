@@ -38,6 +38,40 @@
     <link rel="stylesheet"
           href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
+    <!-- ============================================ -->
+    <!-- GOOGLE ADS - TAG DE CONVERSÃO (CORRIGIDA)    -->
+    <!-- ============================================ -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18367606938"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'AW-18367606938');
+
+        // Função de conversão do Google Ads - Solicitar cotação
+        function gtag_report_conversion(url) {
+            var navigated = false;
+            var callback = function () {
+                if (navigated) return;
+                navigated = true;
+                if (typeof url !== 'undefined') {
+                    window.location.href = url;
+                }
+            };
+
+            // LABEL CORRIGIDA: stvdCLGQtt4cEJrhrbZE (com "CL")
+            gtag('event', 'conversion', {
+                'send_to': 'AW-18367606938/stvdCLGQtt4cEJrhrbZE',
+                'event_callback': callback
+            });
+
+            // Fallback: redireciona mesmo se a tag demorar ou falhar
+            setTimeout(callback, 1000);
+            return false;
+        }
+    </script>
+    <!-- ============================================ -->
+
 </head>
 
 <body>
@@ -90,11 +124,11 @@ HEADER
 
         </nav>
 
-        <!-- BOTÃO -->
-
+        <!-- BOTÃO HEADER COM CONVERSÃO -->
         <a href="https://wa.me/5531996488546"
            target="_blank"
-           class="btn-header">
+           class="btn-header"
+           onclick="return gtag_report_conversion('https://wa.me/5531996488546');">
 
             <i class="fa-brands fa-whatsapp"></i>
 
@@ -143,15 +177,20 @@ HERO
 
             <div class="hero-botoes">
 
-                <a href="#orcamento" class="btn-vermelho">
+                <!-- BOTÃO ORÇAMENTO COM CONVERSÃO -->
+                <a href="#orcamento"
+                   class="btn-vermelho"
+                   onclick="return gtag_report_conversion('#orcamento');">
 
                     Click e calcule online agora!!!
                     
                 </a>
 
+                <!-- BOTÃO WHATSAPP HERO COM CONVERSÃO -->
                 <a href="https://wa.me/5531996488546"
                    target="_blank"
-                   class="btn-whatsapp">
+                   class="btn-whatsapp"
+                   onclick="return gtag_report_conversion('https://wa.me/5531996488546');">
 
                     <i class="fa-brands fa-whatsapp"></i>
 
@@ -365,10 +404,12 @@ ORÇAMENTO AUTOMÁTICO
 
             </div>
 
+            <!-- BOTÃO WHATSAPP DO ORÇAMENTO COM CONVERSÃO -->
             <a
                 id="enviarWhatsapp"
                 class="btn-whatsapp-orcamento"
-                target="_blank">
+                target="_blank"
+                onclick="return gtag_report_conversion('https://wa.me/5531996488546');">
 
                 <i class="fa-brands fa-whatsapp"></i>
 
@@ -713,10 +754,12 @@ CONTATO
 
         <div class="contato-botoes">
 
+            <!-- BOTÃO WHATSAPP CONTATO COM CONVERSÃO -->
             <a
                 href="https://wa.me/5531996488546"
                 target="_blank"
-                class="btn-whatsapp">
+                class="btn-whatsapp"
+                onclick="return gtag_report_conversion('https://wa.me/5531996488546');">
 
                 <i class="fa-brands fa-whatsapp"></i>
 
@@ -901,16 +944,20 @@ RODAPÉ
         alt="Imagem">
 
 </div>
-<!-- BOTÃO FLUTUANTE -->
 
+<!-- ============================================ -->
+<!-- BOTÃO WHATSAPP FLUTUANTE COM CONVERSÃO      -->
+<!-- ============================================ -->
 <a
-href="https://wa.me/5531996488546"
-class="whatsapp-fixo"
-target="_blank">
+    href="https://wa.me/5531996488546"
+    class="whatsapp-fixo"
+    target="_blank"
+    onclick="return gtag_report_conversion('https://wa.me/5531996488546');">
 
-<i class="fa-brands fa-whatsapp"></i>
+    <i class="fa-brands fa-whatsapp"></i>
 
 </a>
+
 <!-- Voltar ao topo -->
 
 <button
