@@ -1,13 +1,16 @@
 //==================================================
 // VMW MOTO-REBOQUES - APP INIT 
 //==================================================
-
-console.log('🚀 Inicializando VMW App...');
+alert("VMW APP - TESTE 1");
+console.log("🚀 VERSÃO 2 - 02/08/2026");
 
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 
 const API_URL = 'https://vmw-config-api.vmwreboques.workers.dev';
+
+// Variável global para controle do watch
+let watchId = null;
 
 //==============================================
 // FUNÇÃO: ENVIAR POSIÇÃO (VERSÃO ATUALIZADA)
@@ -46,14 +49,19 @@ async function enviarPosicao(position) {
             body: JSON.stringify(config)
         });
 
-        if (response.ok) {
+        const json = await response.json();
+        console.log("Worker respondeu:", json);
 
-            localStorage.setItem("latitude", config.latitude);
-            localStorage.setItem("longitude", config.longitude);
-            localStorage.setItem("ultimaAtualizacaoGPS", Date.now());
-
-            console.log("✅ GPS enviado");
+        if (!response.ok) {
+            console.error("Erro do Worker:", json);
+            return;
         }
+
+        localStorage.setItem("latitude", config.latitude);
+        localStorage.setItem("longitude", config.longitude);
+        localStorage.setItem("ultimaAtualizacaoGPS", Date.now().toString());
+
+        console.log("✅ GPS enviado");
 
     } catch (e) {
         console.error(e);
@@ -77,37 +85,36 @@ async function iniciarRastreamento() {
             }
         }
 
-        // Watch Position com filtro de duplicidade
-        let ultimaLatitude = null;
-        let ultimaLongitude = null;
-
-        await Geolocation.watchPosition(
+        watchId = await Geolocation.watchPosition(
             {
                 enableHighAccuracy: true,
-                timeout: 10000,
+                timeout: 15000,
                 maximumAge: 0
             },
-            async (position) => {
+            async (position, err) => {
 
-                if (!position || !position.coords) return;
-
-                const { latitude, longitude } = position.coords;
-
-                if (
-                    ultimaLatitude === latitude &&
-                    ultimaLongitude === longitude
-                ) {
+                if (err) {
+                    console.error("GPS:", err);
                     return;
                 }
 
-                ultimaLatitude = latitude;
-                ultimaLongitude = longitude;
+                if (!position || !position.coords) {
+                    console.log("Sem posição");
+                    return;
+                }
+
+                console.log(
+                    "📍",
+                    position.coords.latitude,
+                    position.coords.longitude
+                );
 
                 await enviarPosicao(position);
-            }
-        );
+
+            });
 
         console.log('✅ Rastreamento iniciado!');
+        console.log(`📡 Watch ID: ${watchId}`);
     } catch (error) {
         console.error('❌ Erro:', error);
     }
@@ -122,6 +129,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (Capacitor.isNativePlatform()) {
         console.log('📱 Modo nativo');
         await iniciarRastreamento();
+        console.log("🚀 Rastreamento ativo");
     } else {
         console.log('🌐 Modo navegador');
     }

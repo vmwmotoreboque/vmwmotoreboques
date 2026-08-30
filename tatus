@@ -1,0 +1,54 @@
+warning: in the working copy of 'index.html', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/index.html b/index.html[m
+[1mindex 10cd7ea..ece967d 100644[m
+[1m--- a/index.html[m
+[1m+++ b/index.html[m
+[36m@@ -38,6 +38,37 @@[m
+     <link rel="stylesheet"[m
+           href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">[m
+ [m
+[32m+[m
+[32m+[m[32m    <!-- GOOGLE ADS - TAG DA CONTA -->[m
+[32m+[m[32m    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18367606938"></script>[m
+[32m+[m[32m    <script>[m
+[32m+[m[32m        window.dataLayer = window.dataLayer || [];[m
+[32m+[m[32m        function gtag(){dataLayer.push(arguments);}[m
+[32m+[m[32m        gtag('js', new Date());[m
+[32m+[m[32m        gtag('config', 'AW-18367606938');[m
+[32m+[m
+[32m+[m[32m        // Conversão Google Ads: Solicitar cotação (1)[m
+[32m+[m[32m        function gtag_report_conversion(url) {[m
+[32m+[m[32m            var navigated = false;[m
+[32m+[m[32m            var callback = function () {[m
+[32m+[m[32m                if (navigated) return;[m
+[32m+[m[32m                navigated = true;[m
+[32m+[m[32m                if (typeof url !== 'undefined') {[m
+[32m+[m[32m                    window.location.href = url;[m
+[32m+[m[32m                }[m
+[32m+[m[32m            };[m
+[32m+[m
+[32m+[m[32m            gtag('event', 'conversion', {[m
+[32m+[m[32m                'send_to': 'AW-18367606938/stvdcLGQtt4cEJrhrbzE',[m
+[32m+[m[32m                'event_callback': callback[m
+[32m+[m[32m            });[m
+[32m+[m
+[32m+[m[32m            // Garante que o botão continue funcionando mesmo se a tag for bloqueada.[m
+[32m+[m[32m            setTimeout(callback, 1000);[m
+[32m+[m[32m            return false;[m
+[32m+[m[32m        }[m
+[32m+[m[32m    </script>[m
+[32m+[m
+ </head>[m
+ [m
+ <body>[m
+[36m@@ -143,7 +174,9 @@[m [mHERO[m
+ [m
+             <div class="hero-botoes">[m
+ [m
+[31m-                <a href="#orcamento" class="btn-vermelho">[m
+[32m+[m[32m                <a href="#orcamento"[m
+[32m+[m[32m                   class="btn-vermelho"[m
+[32m+[m[32m                   onclick="return gtag_report_conversion('#orcamento');">[m
+ [m
+                     Click e calcule online agora!!![m
+                     [m

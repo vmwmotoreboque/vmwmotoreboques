@@ -1,7 +1,6 @@
 //==================================================
 // VMW MOTO-REBOQUES - SCRIPT.JS (COMPLETO)
 // COM MARCADORES ESTILO GOOGLE MAPS
-// VERSÃO CORRIGIDA - WHATSAPP + GOOGLE ADS
 //==================================================
 
 const API_KEY = "1c1bd45c2e5a431b8e45a47d2c57d950";
@@ -11,7 +10,7 @@ const API_URL = "https://vmw-config-api.vmwreboques.workers.dev";
 // FORÇAR RECARGA DE CONFIGURAÇÕES
 //==============================================
 
-const VERSAO_SISTEMA = "2.0.5";
+const VERSAO_SISTEMA = "2.0.1";
 const versaoAtual = localStorage.getItem("vmw_versao");
 
 if (versaoAtual !== VERSAO_SISTEMA) {
@@ -342,21 +341,8 @@ async function calcularOrcamento() {
         tempo.innerHTML = Math.round(tempoTotal) + " min";
         valor.innerHTML = "R$ " + preco.toFixed(2);
 
-        // =============================================
-        // GERAR LINK DO WHATSAPP
-        // O BOTÃO NÃO TEM MAIS ONCLICK NO HTML
-        // =============================================
         const mensagem = `🚚 *NOVO ORÇAMENTO - VMW Moto-Reboques*\n\n👤 Nome: ${nome.value}\n📞 WhatsApp: ${telefone.value}\n🏍 Moto: ${moto.value}\n📍 Retirada: ${retirada.value}\n🏁 Entrega: ${entrega.value}\n📏 Distância: ${distanciaTotal.toFixed(1)} km\n⏱ Tempo estimado: ${Math.round(tempoTotal)} minutos\n💰 Valor: R$ ${preco.toFixed(2)}`;
-        
-        // Definir o href do botão (o JavaScript vai controlar o clique)
-        const numeroWhatsApp = "5531996488546";
-        const linkWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensagem)}`;
-        
-        // Atualizar o href do botão
-        whatsapp.href = linkWhatsApp;
-        whatsapp.style.display = "inline-block";
-        
-        console.log("✅ Link do WhatsApp gerado:", linkWhatsApp);
+        whatsapp.href = "https://wa.me/5531996488546?text=" + encodeURIComponent(mensagem);
 
     } catch (erro) {
         console.error("❌ Erro:", erro);
@@ -365,65 +351,6 @@ async function calcularOrcamento() {
         botao.disabled = false;
         botao.innerHTML = "Calcular Orçamento";
     }
-}
-
-//==============================================
-// CONFIGURAR BOTÃO WHATSAPP (COM GOOGLE ADS)
-//==============================================
-
-function configurarBotaoWhatsApp() {
-    const botaoOriginal = document.getElementById("enviarWhatsapp");
-    if (!botaoOriginal) {
-        console.warn("⚠️ Botão WhatsApp não encontrado!");
-        return;
-    }
-
-    // Remover onclick do HTML para evitar conflito
-    botaoOriginal.removeAttribute('onclick');
-
-    // Clonar para remover eventos antigos
-    const novoBotao = botaoOriginal.cloneNode(true);
-    botaoOriginal.parentNode.replaceChild(novoBotao, botaoOriginal);
-
-    // Adicionar evento personalizado
-    novoBotao.addEventListener("click", function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const link = this.getAttribute("href");
-        console.log("🔗 Abrindo WhatsApp:", link);
-
-        if (link && link.startsWith("https://wa.me/")) {
-            // =============================================
-            // REGISTRAR CONVERSÃO NO GOOGLE ADS
-            // =============================================
-            if (typeof gtag_report_conversion === 'function') {
-                console.log("📊 Registrando conversão no Google Ads...");
-                try {
-                    gtag_report_conversion(link);
-                } catch (err) {
-                    console.warn("⚠️ Erro ao registrar conversão:", err);
-                }
-            } else {
-                console.log("ℹ️ Função gtag_report_conversion não encontrada");
-            }
-
-            // =============================================
-            // ABRIR WHATSAPP (COM DELAY PARA O GOOGLE ADS)
-            // =============================================
-            setTimeout(function() {
-                window.open(link, "_blank");
-                console.log("✅ WhatsApp aberto!");
-            }, 400);
-
-        } else {
-            alert("Por favor, calcule um orçamento primeiro!");
-        }
-    });
-
-    // Atualizar referência global
-    window.whatsapp = novoBotao;
-    console.log("✅ Botão WhatsApp configurado com Google Ads integrado!");
 }
 
 //==============================================
@@ -465,21 +392,15 @@ function configurarAutocomplete(campoId, listaId) {
 botao.addEventListener("click", calcularOrcamento);
 configurarAutocomplete("retirada", "listaRetirada");
 configurarAutocomplete("entrega", "listaEntrega");
-document.getElementById("formOrcamento").addEventListener("submit", (e) => { 
-    e.preventDefault(); 
-    calcularOrcamento(); 
-});
+document.getElementById("formOrcamento").addEventListener("submit", (e) => { e.preventDefault(); calcularOrcamento(); });
 
 //==============================================
 // INICIALIZAÇÃO
 //==============================================
 
 document.addEventListener("DOMContentLoaded", async () => {
-    console.log("🚀 Inicializando VMW (v2.0.5)...");
+    console.log("🚀 Inicializando VMW...");
     await carregarConfiguracoesCloudflare();
-
-    // Configurar botão WhatsApp (após carregar)
-    configurarBotaoWhatsApp();
 
     const reboquePos = obterLocalizacaoReboque();
     if (reboquePos && mapa) {
@@ -531,5 +452,5 @@ document.addEventListener("DOMContentLoaded", async () => {
         mapa.setView(reboquePos, 13);
     }
 
-    console.log("✅ Tudo pronto! Versão 2.0.5 - Compatível com Google Ads");
+    console.log("✅ Tudo pronto!");
 });
