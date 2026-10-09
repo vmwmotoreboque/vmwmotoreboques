@@ -37,7 +37,85 @@
 
     <link rel="stylesheet"
           href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+    /* ============================================ */
+    /* BOTÃO FLUTUANTE DE ORÇAMENTO                 */
+    /* ============================================ */
+    .btn-orcamento-flutuante {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #25D366;
+        color: white;
+        padding: 15px 30px;
+        border-radius: 50px;
+        font-family: 'Poppins', sans-serif;
+        font-weight: 700;
+        font-size: 16px;
+        text-decoration: none;
+        box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
+        z-index: 9999;
+        animation: pulse-verde 1.5s infinite, brilho-verde 2s infinite;
+        border: 2px solid white;
+        white-space: nowrap;
+        text-align: center;
+    }
 
+    .btn-orcamento-flutuante:hover {
+        background: #1ebe5d;
+        transform: translateX(-50%) scale(1.05);
+    }
+
+    @keyframes pulse-verde {
+        0% { transform: translateX(-50%) scale(1); }
+        50% { transform: translateX(-50%) scale(1.08); }
+        100% { transform: translateX(-50%) scale(1); }
+    }
+
+    @keyframes brilho-verde {
+        0% { box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4); }
+        50% { box-shadow: 0 4px 25px rgba(37, 211, 102, 0.8); }
+        100% { box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4); }
+    }
+
+    /* Ajuste para telas pequenas (celular) */
+    @media (max-width: 480px) {
+        .btn-orcamento-flutuante {
+            font-size: 13px;
+            padding: 12px 20px;
+            bottom: 15px;
+            width: 90%;
+            max-width: 320px;
+        }
+    }
+</style>
+<style>
+    /* ============================================ */
+    /* BOTÃO ADMIN (SÓ APARECE NO APK)              */
+    /* ============================================ */
+    #btn-admin-apk {
+        display: none; /* Escondido por padrão */
+        position: fixed;
+        top: 15px;
+        right: 15px;
+        background: #d60000;
+        color: white;
+        padding: 10px 18px;
+        border-radius: 50px;
+        font-family: 'Poppins', sans-serif;
+        font-weight: 700;
+        font-size: 14px;
+        text-decoration: none;
+        box-shadow: 0 4px 12px rgba(214, 0, 0, 0.4);
+        z-index: 99999;
+        border: 2px solid white;
+    }
+
+    #btn-admin-apk:hover {
+        background: #b00000;
+    }
+</style>
 </head>
 
 <body>
@@ -980,7 +1058,31 @@ SCRIPT DE ADMIN (ATALHO SECRETO)
         }
     }, 1000);
 </script>
-
+<!-- ============================================ -->
+<!-- BOTÃO FLUTUANTE DE ORÇAMENTO                 -->
+<!-- ============================================ -->
+<a href="#orcamento" class="btn-orcamento-flutuante">
+    📋 Calcular Orçamento Online Agora
+</a>
+<!-- BOTÃO ADMIN (SÓ APARECE NO APK) -->
+<a href="admin.html" id="btn-admin-apk">
+    ⚙️ Admin
+</a>
+<script>
+    // Mostra o botão Admin apenas se for o APK (Capacitor)
+    document.addEventListener("DOMContentLoaded", () => {
+        const capacitor = (typeof Capacitor !== 'undefined') ? Capacitor : 
+                          (typeof window.Capacitor !== 'undefined') ? window.Capacitor : null;
+        
+        if (capacitor && capacitor.isNativePlatform()) {
+            const btnAdmin = document.getElementById("btn-admin-apk");
+            if (btnAdmin) {
+                btnAdmin.style.display = "block";
+                console.log("✅ Botão Admin ativado (APK)");
+            }
+        }
+    });
+</script>
 </body>
 
 </html>

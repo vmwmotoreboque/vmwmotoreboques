@@ -1,15 +1,24 @@
 //==================================================
-// VMW MOTO-REBOQUES - SCRIPT.JS (CAPACITOR 6) - CORRIGIDO
+// VMW MOTO-REBOQUES - SCRIPT.JS (VERSÃO 4.1.0)
+// LOCAL ONLINE + RETIRADA + ENTREGA + VOLTA BASE
+// ENVIO DE GPS A CADA 10 SEGUNDOS
 //==================================================
 
 const API_KEY = "1c1bd45c2e5a431b8e45a47d2c57d950";
 const API_URL = "https://vmw-config-api.vmwreboques.workers.dev";
 
+// COORDENADAS DA BASE (VILA RICA 2095, CAIÇARA)
+const BASE_LAT = -19.903006;
+const BASE_LNG = -43.980724;
+
+// INTERVALO DE ENVIO DO GPS (10 SEGUNDOS)
+const GPS_INTERVALO = 10000; // 10.000 milissegundos = 10 segundos
+
 //==============================================
 // FORÇAR RECARGA DE CONFIGURAÇÕES
 //==============================================
 
-const VERSAO_SISTEMA = "2.0.9"; // Mudei para forçar a atualização do cache
+const VERSAO_SISTEMA = "4.1.0"; 
 const versaoAtual = localStorage.getItem("vmw_versao");
 
 if (versaoAtual !== VERSAO_SISTEMA) {
@@ -27,7 +36,7 @@ if (versaoAtual !== VERSAO_SISTEMA) {
 // MAPA
 //==============================================
 
-const mapa = L.map("mapa-rota").setView([-19.9167, -43.9345], 11);
+const mapa = L.map("mapa-rota").setView([BASE_LAT, BASE_LNG], 11);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "© OpenStreetMap"
 }).addTo(mapa);
@@ -37,6 +46,7 @@ let marcadorOrigem = null;
 let marcadorDestino = null;
 let marcadorReboque = null;
 let watchId = null;
+let intervaloGPS = null;
 
 //==============================================
 // ELEMENTOS
@@ -58,35 +68,90 @@ const whatsapp = document.getElementById("enviarWhatsapp");
 // CARREGAR CONFIGURAÇÕES
 //==============================================
 
-async function carregarConfiguracoesCloudflare() {
-    try {
-        const res = await fetch(API_URL);
-        if (!res.ok) throw new Error("Falha");
-        const config = await res.json();
-        Object.keys(config).forEach(key => localStorage.setItem(key, config[key]));
-        console.log("✅ Config carregada");
-    } catch (e) {
-        console.error("❌ Erro ao carregar Cloudflare:", e);
-        if (!localStorage.getItem("ate20")) {
-            localStorage.setItem("ate20", "120");
-            localStorage.setItem("km20a40", "2");
-            localStorage.setItem("base40", "150");
-            localStorage.setItem("kmAcima40", "2.5");
-        }
-    }
+function carregarConfiguracoesLocais() {
+    const config = {};
+    
+    config.gasolina = parseFloat(localStorage.getItem('gasolina')) || 5.80;
+    config.consumo = parseFloat(localStorage.getItem('consumo')) || 9;
+    config.depreciacao = parseFloat(localStorage.getItem('depreciacao')) || 0.50;
+    config.manutencao = parseFloat(localStorage.getItem('manutencao')) || 0.30;
+    
+    config.preco_00_05 = parseFloat(localStorage.getItem('preco_00_05')) || 0;
+    config.preco_05_0830 = parseFloat(localStorage.getItem('preco_05_0830')) || 0;
+    config.preco_0831_14 = parseFloat(localStorage.getItem('preco_0831_14')) || 0;
+    config.preco_14_18 = parseFloat(localStorage.getItem('preco_14_18')) || 0;
+    config.preco_18_20 = parseFloat(localStorage.getItem('preco_18_20')) || 0;
+    config.preco_20_22 = parseFloat(localStorage.getItem('preco_20_22')) || 0;
+    config.preco_22_2359 = parseFloat(localStorage.getItem('preco_22_2359')) || 0;
+    
+    return config;
 }
 
-function obterLocalizacaoReboque() {
-    const lat = parseFloat(localStorage.getItem("latitude"));
-    const lng = parseFloat(localStorage.getItem("longitude"));
-    return (isNaN(lat) || isNaN(lng)) ? null : [lat, lng];
+async function carregarLocalizacaoAPK() {
+    // 1. Tentar da API (localização atual do APK)
+    try {
+        const res = await fetch(API_URL);
+        if (res.ok) {
+            const config = await res.json();
+            const lat = parseFloat(config.latitude);
+            const lng = parseFloat(config.longitude);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                console.log("📍 Localização do APK (API):", lat, lng);
+                localStorage.setItem("latitude", lat);
+                localStorage.setItem("longitude", lng);
+                return [lat, lng];
+            }
+        }
+    } catch (e) {
+        console.warn("⚠️ Não foi possível carregar localização da API:", e);
+    }
+
+    // 2. Tentar do LocalStorage
+    const latLocal = parseFloat(localStorage.getItem("latitude"));
+    const lngLocal = parseFloat(localStorage.getItem("longitude"));
+    if (!isNaN(latLocal) && !isNaN(lngLocal)) {
+        console.log("📍 Localização do APK (LocalStorage):", latLocal, lngLocal);
+        return [latLocal, lngLocal];
+    }
+
+    // 3. Fallback: Base
+    console.log("📍 Usando Base (Vila Rica) como fallback");
+    return [BASE_LAT, BASE_LNG];
 }
+
+function obterFaixaHorario() {
+    const agora = new Date();
+    const hora = agora.getHours();
+    const minuto = agora.getMinutes();
+    const horaMinuto = hora * 60 + minuto;
+
+    const faixas = [
+        { inicio: 0, fim: 300, id: 'preco_00_05' },
+        { inicio: 301, fim: 510, id: 'preco_05_0830' },
+        { inicio: 511, fim: 840, id: 'preco_0831_14' },
+        { inicio: 841, fim: 1080, id: 'preco_14_18' },
+        { inicio: 1081, fim: 1200, id: 'preco_18_20' },
+        { inicio: 1201, fim: 1320, id: 'preco_20_22' },
+        { inicio: 1321, fim: 1439, id: 'preco_22_2359' }
+    ];
+
+    for (const faixa of faixas) {
+        if (horaMinuto >= faixa.inicio && horaMinuto <= faixa.fim) {
+            return faixa.id;
+        }
+    }
+    return 'preco_00_05';
+}
+
+//==============================================
+// FUNÇÕES DE CÁLCULO
+//==============================================
 
 async function buscarCoordenadas(endereco) {
     const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(endereco)}&limit=1&lang=pt&apiKey=${API_KEY}`;
     const res = await fetch(url);
     const dados = await res.json();
-    if (!dados.features || dados.features.length === 0) throw new Error("Endereço não encontrado.");
+    if (!dados.features || dados.features.length === 0) throw new Error("Endereço não encontrado: " + endereco);
     const coords = dados.features[0].geometry.coordinates;
     return [coords[1], coords[0]];
 }
@@ -100,51 +165,10 @@ async function calcularRota(origem, destino) {
 }
 
 //==============================================
-// CRIAR ÍCONE DO REBOQUE (REUTILIZÁVEL)
+// DESENHAR MAPA
 //==============================================
 
-function criarIconeReboque(tamanho = 44) {
-    return L.divIcon({
-        className: 'custom-marker-reboque',
-        html: `
-            <div style="
-                background: #1a73e8;
-                width: ${tamanho}px;
-                height: ${tamanho}px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border: 3px solid white;
-                box-shadow: 0 2px 15px rgba(26, 115, 232, 0.5);
-                position: relative;
-                animation: pulse-blue 1.5s infinite;
-            ">
-                <i class="fa-solid fa-truck" style="color: white; font-size: ${tamanho * 0.45}px;"></i>
-                <div style="
-                    position: absolute;
-                    bottom: -${tamanho * 0.27}px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    width: 0;
-                    height: 0;
-                    border-left: ${tamanho * 0.18}px solid transparent;
-                    border-right: ${tamanho * 0.18}px solid transparent;
-                    border-top: ${tamanho * 0.27}px solid #1a73e8;
-                "></div>
-            </div>
-        `,
-        iconSize: [tamanho, tamanho * 1.27],
-        iconAnchor: [tamanho / 2, tamanho * 1.27],
-        popupAnchor: [0, -tamanho * 1.1]
-    });
-}
-
-//==============================================
-// DESENHAR MAPA COM MARCADORES ESTILO GOOGLE
-//==============================================
-
-function desenharMapa(rota, origem, destino, reboquePos) {
+function desenharMapa(rota, origem, destino) {
     if (linhaRota) { mapa.removeLayer(linhaRota); }
     if (marcadorOrigem) { mapa.removeLayer(marcadorOrigem); }
     if (marcadorDestino) { mapa.removeLayer(marcadorDestino); }
@@ -156,23 +180,13 @@ function desenharMapa(rota, origem, destino, reboquePos) {
 
     const iconeOrigem = L.divIcon({
         className: 'custom-marker-origem',
-        html: `
-            <div style="background: #4CAF50; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3); position: relative;">
-                <div style="width: 12px; height: 12px; background: white; border-radius: 50%; border: 2px solid #4CAF50;"></div>
-                <div style="position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 12px solid #4CAF50;"></div>
-            </div>
-        `,
+        html: `<div style="background: #4CAF50; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3); position: relative;"><div style="width: 12px; height: 12px; background: white; border-radius: 50%; border: 2px solid #4CAF50;"></div><div style="position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 12px solid #4CAF50;"></div></div>`,
         iconSize: [36, 48], iconAnchor: [18, 48], popupAnchor: [0, -45]
     });
 
     const iconeDestino = L.divIcon({
         className: 'custom-marker-destino',
-        html: `
-            <div style="background: #d60000; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3); position: relative;">
-                <div style="width: 12px; height: 12px; background: white; border-radius: 50%; border: 2px solid #d60000;"></div>
-                <div style="position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 12px solid #d60000;"></div>
-            </div>
-        `,
+        html: `<div style="background: #d60000; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3); position: relative;"><div style="width: 12px; height: 12px; background: white; border-radius: 50%; border: 2px solid #d60000;"></div><div style="position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 12px solid #d60000;"></div></div>`,
         iconSize: [36, 48], iconAnchor: [18, 48], popupAnchor: [0, -45]
     });
 
@@ -184,30 +198,8 @@ function desenharMapa(rota, origem, destino, reboquePos) {
         .addTo(mapa)
         .bindPopup(`<div style="font-family: 'Poppins', sans-serif; padding: 5px;"><strong style="color: #d60000;">🏁 Ponto de Entrega</strong><br><span style="font-size: 12px; color: #666;">${entrega.value || 'Destino'}</span></div>`);
 
-    if (reboquePos) {
-        const iconeReboque = criarIconeReboque(44);
-        marcadorReboque = L.marker(reboquePos, { icon: iconeReboque })
-            .addTo(mapa)
-            .bindPopup(`<div style="font-family: 'Poppins', sans-serif; padding: 5px;"><strong style="color: #1a73e8;">🚚 Posição do Reboque</strong><br><span style="font-size: 12px; color: #666;">Atualizado em tempo real</span></div>`);
-    }
-
     const bounds = linhaRota.getBounds();
-    if (reboquePos) { bounds.extend(reboquePos); }
     mapa.fitBounds(bounds, { padding: [50, 50] });
-}
-
-//==============================================
-// CALCULAR PREÇO VMW
-//==============================================
-
-function calcularPrecoVMW(distanciaTotal) {
-    const ate20 = parseFloat(localStorage.getItem("ate20") || 120);
-    const km20a40 = parseFloat(localStorage.getItem("km20a40") || 2);
-    const base40 = parseFloat(localStorage.getItem("base40") || 150);
-    const kmAcima40 = parseFloat(localStorage.getItem("kmAcima40") || 2.5);
-    if (distanciaTotal <= 20) return ate20;
-    if (distanciaTotal <= 40) return ate20 + ((distanciaTotal - 20) * km20a40);
-    return base40 + ((distanciaTotal - 40) * kmAcima40);
 }
 
 //==============================================
@@ -226,42 +218,92 @@ async function calcularOrcamento() {
 
         const origem = await buscarCoordenadas(retirada.value);
         const destino = await buscarCoordenadas(entrega.value);
-        const rota = await calcularRota(origem, destino);
-        const distanciaCliente = rota.features[0].properties.distance / 1000;
-        const tempoCliente = rota.features[0].properties.time / 60;
+        const base = [BASE_LAT, BASE_LNG];
 
-        const reboquePos = obterLocalizacaoReboque();
-        let distanciaReboque = 0, tempoReboque = 0;
-        if (reboquePos) {
-            try {
-                const rotaReboque = await calcularRota(reboquePos, origem);
-                if (rotaReboque && rotaReboque.features && rotaReboque.features.length > 0) {
-                    distanciaReboque = rotaReboque.features[0].properties.distance / 1000;
-                    tempoReboque = rotaReboque.features[0].properties.time / 60;
-                }
-            } catch (e) { console.warn("Erro rota reboque:", e); }
-        }
+        const reboquePos = await carregarLocalizacaoAPK();
 
-        const distanciaTotal = distanciaCliente + distanciaReboque;
-        const tempoTotal = tempoCliente + tempoReboque;
-        const preco = calcularPrecoVMW(distanciaTotal);
+        const rotaCliente = await calcularRota(origem, destino);
+        const distanciaCliente = rotaCliente.features[0].properties.distance / 1000;
+        const tempoCliente = rotaCliente.features[0].properties.time / 60;
 
-        desenharMapa(rota, origem, destino, reboquePos);
+        let distanciaAPK = 0;
+        try {
+            const rotaAPK = await calcularRota(reboquePos, origem);
+            if (rotaAPK && rotaAPK.features && rotaAPK.features.length > 0) {
+                distanciaAPK = rotaAPK.features[0].properties.distance / 1000;
+            }
+        } catch (e) { console.warn("⚠️ Erro rota APK:", e); }
+
+        let distanciaVolta = 0;
+        try {
+            const rotaVolta = await calcularRota(destino, base);
+            if (rotaVolta && rotaVolta.features && rotaVolta.features.length > 0) {
+                distanciaVolta = rotaVolta.features[0].properties.distance / 1000;
+            }
+        } catch (e) { console.warn("⚠️ Erro rota volta:", e); }
+
+        const distanciaTotal = distanciaAPK + distanciaCliente + distanciaVolta;
+        const tempoTotal = tempoCliente;
+
+        const config = carregarConfiguracoesLocais();
+        const gasolina = config.gasolina;
+        const consumo = config.consumo;
+        const depreciacao = config.depreciacao;
+        const manutencao = config.manutencao;
+
+        const faixaId = obterFaixaHorario();
+        const valorFaixa = config[faixaId] || 0;
+
+        const custoCombustivel = (distanciaTotal / consumo) * gasolina;
+        const custoDepreciacao = (depreciacao + manutencao) * distanciaTotal;
+        const valorFinal = valorFaixa + custoCombustivel + custoDepreciacao;
+
+        console.log("🧮 CÁLCULO DETALHADO:");
+        console.log("KM Local Online -> Retirada:", distanciaAPK.toFixed(2));
+        console.log("KM Retirada -> Entrega:", distanciaCliente.toFixed(2));
+        console.log("KM Entrega -> Base:", distanciaVolta.toFixed(2));
+        console.log("KM Total:", distanciaTotal.toFixed(2));
+        console.log("VALOR FINAL:", valorFinal.toFixed(2));
+
+        desenharMapa(rotaCliente, origem, destino);
 
         resultado.style.display = "block";
-        km.innerHTML = distanciaTotal.toFixed(1) + " km";
+        km.innerHTML = distanciaTotal.toFixed(1) + " km (total)";
         tempo.innerHTML = Math.round(tempoTotal) + " min";
-        valor.innerHTML = "R$ " + preco.toFixed(2);
+        valor.innerHTML = "R$ " + valorFinal.toFixed(2);
 
-        // GERA O LINK DO WHATSAPP
-        const mensagem = `🚚 *NOVO ORÇAMENTO - VMW Moto-Reboques*\n\n👤 Nome: ${nome.value}\n📞 WhatsApp: ${telefone.value}\n🏍 Moto: ${moto.value}\n📍 Retirada: ${retirada.value}\n🏁 Entrega: ${entrega.value}\n📏 Distância: ${distanciaTotal.toFixed(1)} km\n⏱ Tempo estimado: ${Math.round(tempoTotal)} minutos\n💰 Valor: R$ ${preco.toFixed(2)}`;
+        const mensagem = `🚚 *NOVO ORÇAMENTO - VMW Moto-Reboques*\n\n👤 Nome: ${nome.value}\n📞 WhatsApp: ${telefone.value}\n🏍 Moto: ${moto.value}\n📍 Retirada: ${retirada.value}\n🏁 Entrega: ${entrega.value}\n📏 Distância Total: ${distanciaTotal.toFixed(1)} km\n⏱ Tempo estimado: ${Math.round(tempoTotal)} minutos\n💰 Valor: R$ ${valorFinal.toFixed(2)}`;
         
-        // ATRIBUI O LINK AO BOTÃO SEM BLOQUEAR
         whatsapp.href = "https://wa.me/5531996488546?text=" + encodeURIComponent(mensagem);
 
+        const dadosOrcamento = {
+            data: new Date().toISOString(),
+            nome: nome.value,
+            telefone: telefone.value,
+            moto: moto.value,
+            retirada: retirada.value,
+            entrega: entrega.value,
+            kmTotal: distanciaTotal.toFixed(1),
+            valor: valorFinal.toFixed(2),
+            custo: (custoCombustivel + custoDepreciacao).toFixed(2),
+            lucro: (valorFinal - (custoCombustivel + custoDepreciacao)).toFixed(2),
+            status: "pendente"
+        };
+
+        try {
+            await fetch(API_URL + "/orcamento", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(dadosOrcamento)
+            });
+            console.log("✅ Orçamento enviado para o Admin");
+        } catch (e) {
+            console.warn("⚠️ Erro ao enviar orçamento:", e);
+        }
+
     } catch (erro) {
-        console.error("❌ Erro:", erro);
-        alert("Não foi possível calcular a rota. Verifique os endereços.");
+        console.error("❌ ERRO NO CÁLCULO:", erro);
+        alert("Erro: " + erro.message);
     } finally {
         botao.disabled = false;
         botao.innerHTML = "Calcular Orçamento";
@@ -301,7 +343,7 @@ function configurarAutocomplete(campoId, listaId) {
 }
 
 //==============================================
-// GPS - FUNÇÕES DE RASTREAMENTO (CAPACITOR 6)
+// GPS - APENAS PARA O APK (ENVIA A CADA 10 SEGUNDOS)
 //==============================================
 
 function obterGeolocation() {
@@ -326,14 +368,10 @@ async function enviarPosicao(position) {
             precisao: c.accuracy || 0,
             altitude: c.altitude || 0,
             status: "online",
-            ate20: Number(localStorage.getItem('ate20')) || 120,
-            km20a40: Number(localStorage.getItem('km20a40')) || 2,
-            base40: Number(localStorage.getItem('base40')) || 150,
-            kmAcima40: Number(localStorage.getItem('kmAcima40')) || 2.5,
             cidade: localStorage.getItem('cidade') || 'Belo Horizonte'
         };
 
-        console.log("📤 GPS:", config);
+        console.log("📤 Enviando GPS para a API:", config);
 
         const response = await fetch(API_URL, {
             method: "POST",
@@ -341,53 +379,34 @@ async function enviarPosicao(position) {
             body: JSON.stringify(config)
         });
 
-        const json = await response.json();
-        console.log("Worker respondeu:", json);
-
         if (!response.ok) {
-            console.error("Erro do Worker:", json);
+            console.error("Erro do Worker:", await response.json());
             return;
         }
 
         localStorage.setItem("latitude", config.latitude);
         localStorage.setItem("longitude", config.longitude);
         localStorage.setItem("ultimaAtualizacaoGPS", Date.now().toString());
-        localStorage.setItem("precisaoGPS", c.accuracy || '0');
 
-        console.log("✅ GPS enviado");
-        atualizarMarcadorReboque([c.latitude, c.longitude]);
+        console.log("✅ GPS enviado com sucesso");
 
     } catch (e) {
-        console.error("❌ Erro enviar posição:", e);
+        console.error("❌ Erro ao enviar posição:", e);
     }
-}
-
-function atualizarMarcadorReboque(posicao) {
-    if (!posicao || !Array.isArray(posicao) || posicao.length < 2) {
-        console.warn("⚠️ Posição inválida para atualizar marcador:", posicao);
-        return;
-    }
-
-    if (marcadorReboque) { mapa.removeLayer(marcadorReboque); }
-
-    const iconeReboque = criarIconeReboque(44);
-    marcadorReboque = L.marker(posicao, { icon: iconeReboque })
-        .addTo(mapa)
-        .bindPopup(`<div style="font-family: 'Poppins', sans-serif; padding: 5px;"><strong style="color: #1a73e8;">🚚 Posição do Reboque</strong><br><span style="font-size: 12px; color: #666;">Atualizado em tempo real</span></div>`);
 }
 
 async function iniciarRastreamento() {
-    console.log("📱 Iniciando rastreamento GPS (Capacitor 6)...");
+    console.log("📱 Iniciando rastreamento GPS (APK)...");
 
     try {
         if (typeof Capacitor === 'undefined' && typeof window.Capacitor === 'undefined') {
-            console.log('🌐 Capacitor não disponível - modo navegador');
+            console.log('🌐 Capacitor não disponível - modo navegador (sem GPS)');
             return;
         }
 
         const capacitor = Capacitor || window.Capacitor;
         if (!capacitor.isNativePlatform()) {
-            console.log('🌐 Modo navegador - GPS não disponível');
+            console.log('🌐 Modo navegador - GPS desativado');
             return;
         }
 
@@ -412,20 +431,31 @@ async function iniciarRastreamento() {
         }
 
         console.log("✅ Permissão concedida");
-        console.log("⏳ Iniciando watchPosition...");
+        console.log(`⏳ Iniciando envio a cada ${GPS_INTERVALO / 1000} segundos...`);
 
-        watchId = await geolocation.watchPosition(
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
-            async (position, err) => {
-                if (err) { console.error("❌ Erro GPS:", err); return; }
-                if (!position || !position.coords) { console.log("⏳ Aguardando posição..."); return; }
-                console.log("📍 POSIÇÃO RECEBIDA:", position.coords.latitude, position.coords.longitude);
-                await enviarPosicao(position);
+        // Envia imediatamente a primeira posição
+        const primeiraPos = await geolocation.getCurrentPosition({
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
+        });
+        await enviarPosicao(primeiraPos);
+
+        // Envia a cada X segundos (intervalo definido)
+        intervaloGPS = setInterval(async () => {
+            try {
+                const pos = await geolocation.getCurrentPosition({
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 0
+                });
+                await enviarPosicao(pos);
+            } catch (e) {
+                console.warn("⚠️ Erro ao obter posição no intervalo:", e);
             }
-        );
+        }, GPS_INTERVALO);
 
-        console.log('✅ Rastreamento GPS iniciado!');
-        console.log(`📡 Watch ID: ${watchId}`);
+        console.log(`✅ Rastreamento GPS iniciado! Enviando a cada ${GPS_INTERVALO / 1000} segundos.`);
 
     } catch (error) {
         console.error('❌ Erro ao iniciar rastreamento:', error);
@@ -433,31 +463,22 @@ async function iniciarRastreamento() {
 }
 
 //==============================================
-// EVENTOS
-//==============================================
-
-botao.addEventListener("click", calcularOrcamento);
-configurarAutocomplete("retirada", "listaRetirada");
-configurarAutocomplete("entrega", "listaEntrega");
-document.getElementById("formOrcamento").addEventListener("submit", (e) => { e.preventDefault(); calcularOrcamento(); });
-
-//==============================================
-// INICIALIZAÇÃO - CAPACITOR 6
+// INICIALIZAÇÃO
 //==============================================
 
 document.addEventListener("DOMContentLoaded", async () => {
     try {
         console.log("🚀 Inicializando VMW Moto-Reboques...");
-        console.log("🚀 VERSÃO 2.0.9 - CAPACITOR 6");
+        console.log("🚀 VERSÃO 4.1.0 - GPS A CADA 10 SEGUNDOS");
 
-        // Removidos os alerts de teste que travavam o site
-        await carregarConfiguracoesCloudflare();
+        carregarConfiguracoesLocais();
         console.log("✅ Configurações carregadas");
 
         const capacitor = (typeof Capacitor !== 'undefined') ? Capacitor : 
                           (typeof window.Capacitor !== 'undefined') ? window.Capacitor : null;
 
         if (capacitor && capacitor.isNativePlatform()) {
+            console.log("📱 APK detectado - Iniciando GPS...");
             await iniciarRastreamento();
         } else {
             console.log("🌐 Modo navegador - GPS desativado");
@@ -469,3 +490,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.error("❌ ERRO:", e);
     }
 });
+
+//==============================================
+// EVENTOS
+//==============================================
+
+botao.addEventListener("click", calcularOrcamento);
+configurarAutocomplete("retirada", "listaRetirada");
+configurarAutocomplete("entrega", "listaEntrega");
+document.getElementById("formOrcamento").addEventListener("submit", (e) => { e.preventDefault(); calcularOrcamento(); });

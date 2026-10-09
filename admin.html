@@ -2,312 +2,441 @@
 <html lang="pt-BR">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo | VMW Moto-Reboques</title>
+    
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 
-<meta charset="UTF-8">
-
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0">
-
-<title>
-Painel Administrativo | VMW Moto-Reboques
-</title>
-
-<link rel="stylesheet"
-href="css/admin.css">
-
-<link rel="preconnect"
-href="https://fonts.googleapis.com">
-
-<link rel="preconnect"
-href="https://fonts.gstatic.com"
-crossorigin>
-
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
-rel="stylesheet">
-
-<link rel="stylesheet"
-href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
-
+    <style>
+        /* Estilos Básicos para as Abas */
+        .admin-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: #eee;
+            cursor: pointer;
+            font-weight: 600;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            transition: 0.3s;
+            flex: 1;
+            min-width: 120px;
+        }
+        .tab-btn.active {
+            background: #d60000;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .config-group {
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .config-group h3 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 16px;
+        }
+        .config-group label {
+            display: block;
+            font-weight: 500;
+            font-size: 14px;
+            margin-top: 10px;
+            color: #555;
+        }
+        .config-group input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .btn-salvar {
+            background: #d60000;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .btn-salvar:hover {
+            background: #b00000;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background: #f8f8f8;
+            font-weight: 600;
+        }
+        .status-executado {
+            color: green;
+            font-weight: bold;
+        }
+        .status-pendente {
+            color: orange;
+            font-weight: bold;
+        }
+        .total-row {
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+    </style>
 </head>
 
 <body>
 
+<!-- ============================ -->
+<!-- LOGIN                       -->
+<!-- ============================ -->
 <div class="login">
-
-<div class="login-box">
-
-<img src="imagens/logo.png"
-class="logo"
-alt="VMW">
-
-<h2>
-
-Painel Administrativo
-
-</h2>
-
-<p>
-
-VMW Moto-Reboques
-
-</p>
-
-<input
-type="password"
-id="senha"
-placeholder="Digite sua senha">
-
-<button
-id="entrar">
-
-Entrar
-
-</button>
-
-<p
-id="erro">
-
-Senha incorreta
-
-</p>
-
+    <div class="login-box">
+        <img src="imagens/logo.png" class="logo" alt="VMW">
+        <h2>Painel Administrativo</h2>
+        <p>VMW Moto-Reboques</p>
+        <input type="password" id="senha" placeholder="Digite sua senha">
+        <button id="entrar">Entrar</button>
+        <p id="erro">Senha incorreta</p>
+    </div>
 </div>
 
-</div>
-
-<div
-class="painel"
-id="painel">
-
-<header>
-
-<h1>
-
-VMW Moto-Reboques
-
-</h1>
-
-<button
-id="sair">
-
-Sair
-
-</button>
-
-</header>
-
 <!-- ============================ -->
-<!-- LOCALIZAÇÃO ATUAL           -->
+<!-- PAINEL PRINCIPAL            -->
 <!-- ============================ -->
+<div class="painel" id="painel">
 
-<section class="card">
+    <header>
+        <h1>VMW Moto-Reboques</h1>
+        <button id="sair">Sair</button>
+    </header>
 
-<h2>
-
-📍 Localização Atual
-
-</h2>
-
-<p>
-
-Cidade:
-
-<span
-id="cidade">
-
-Não definida
-
-</span>
-
-</p>
-
-<p>
-
-Latitude:
-
-<span
-id="lat">
-
---
-
-</span>
-
-</p>
-
-<p>
-
-Longitude:
-
-<span
-id="lon">
-
---
-
-</span>
-
-</p>
-
-<button
-id="atualizarLocalizacao">
-
-Atualizar localização
-
-</button>
-
-</section>
-
-<!-- ============================ -->
-<!-- AVISO DE GPS (NOVO)         -->
-<!-- ============================ -->
-
-<section class="card" style="background: #fff3cd; border-left: 4px solid #ffc107;">
-
-    <h2 style="color: #856404;">⚠️ IMPORTANTE - GPS</h2>
-
-    <p style="color: #856404; font-size: 14px;">
-        <strong>📱 Para o GPS funcionar em movimento:</strong>
-    </p>
-
-    <ul style="color: #856404; font-size: 13px; margin-top: 10px; padding-left: 20px;">
-        <li>✅ Deixe esta página <strong>ABERTA</strong> no celular</li>
-        <li>✅ Não feche o navegador</li>
-        <li>✅ Não bloqueie o celular</li>
-        <li>✅ Mantenha a <strong>tela ligada</strong></li>
-        <li>❌ Se fechar, o GPS <strong>PARA</strong> de atualizar</li>
-    </ul>
-
-    <div style="margin-top: 15px; padding: 10px; background: #fff; border-radius: 8px;">
-        <span id="statusGPS" style="font-weight: bold;">🔄 GPS aguardando...</span>
+    <!-- ABAS -->
+    <div class="admin-tabs">
+        <button class="tab-btn active" onclick="abrirAba('aba-calculos', this)">💰 Cálculos e Configurações</button>
+        <button class="tab-btn" onclick="abrirAba('aba-orcamentos', this)">📋 Orçamentos Recebidos</button>
+        <button class="tab-btn" onclick="abrirAba('aba-oficinas', this)">🔧 Oficinas Parceiras</button>
     </div>
 
-</section>
+    <!-- ============================================ -->
+    <!-- ABA 1: CÁLCULOS E CONFIGURAÇÕES             -->
+    <!-- ============================================ -->
+    <div id="aba-calculos" class="tab-content active">
+        
+        <div class="config-group">
+            <h3>⏰ Preços por Faixa de Horário (Valor de Saída)</h3>
+            <label>00:00 às 05:00 (Madrugada) - R$</label>
+            <input type="number" id="preco_00_05" placeholder="0.00" step="0.01">
+            
+            <label>05:01 às 08:30 (Início do dia) - R$</label>
+            <input type="number" id="preco_05_0830" placeholder="0.00" step="0.01">
+            
+            <label>08:31 às 14:00 (Manhã/Tarde) - R$</label>
+            <input type="number" id="preco_0831_14" placeholder="0.00" step="0.01">
+            
+            <label>14:01 às 18:00 (Tarde) - R$</label>
+            <input type="number" id="preco_14_18" placeholder="0.00" step="0.01">
+            
+            <label>18:01 às 20:00 (Noite) - R$</label>
+            <input type="number" id="preco_18_20" placeholder="0.00" step="0.01">
+            
+            <label>20:01 às 22:00 (Noite) - R$</label>
+            <input type="number" id="preco_20_22" placeholder="0.00" step="0.01">
+            
+            <label>22:01 às 23:59 (Noite/Madrugada) - R$</label>
+            <input type="number" id="preco_22_2359" placeholder="0.00" step="0.01">
+            
+            <button class="btn-salvar" onclick="salvarPrecosHorarios()">Salvar Preços por Horário</button>
+        </div>
+
+        <div class="config-group">
+            <h3>⛽ Custos Operacionais (por KM)</h3>
+            <label>Preço da Gasolina (R$/L)</label>
+            <input type="number" id="gasolina" placeholder="5.80" step="0.01">
+            
+            <label>Consumo do Veículo (KM/L)</label>
+            <input type="number" id="consumo" placeholder="8" step="0.1">
+            
+            <label>Depreciação (R$/KM)</label>
+            <input type="number" id="depreciacao" placeholder="0.50" step="0.01">
+            
+            <label>Manutenção (R$/KM)</label>
+            <input type="number" id="manutencao" placeholder="0.30" step="0.01">
+            
+            <button class="btn-salvar" onclick="salvarCustosOperacionais()">Salvar Custos Operacionais</button>
+        </div>
+
+    </div>
+
+    <!-- ============================================ -->
+    <!-- ABA 2: ORÇAMENTOS RECEBIDOS                 -->
+    <!-- ============================================ -->
+    <div id="aba-orcamentos" class="tab-content">
+        <h3>📋 Orçamentos Recebidos</h3>
+        <p style="font-size: 13px; color: #666;">Os orçamentos feitos no site aparecerão aqui automaticamente.</p>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Nome</th>
+                    <th>Telefone</th>
+                    <th>Retirada</th>
+                    <th>Entrega</th>
+                    <th>KM Total</th>
+                    <th>Valor</th>
+                    <th>Custo</th>
+                    <th>Lucro</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="lista-orcamentos">
+                <!-- Preenchido pelo JavaScript -->
+                <tr>
+                    <td colspan="10" style="text-align: center; color: #999;">Nenhum orçamento recebido ainda.</td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td colspan="6">TOTAIS</td>
+                    <td id="total-valor">R$ 0,00</td>
+                    <td id="total-custo">R$ 0,00</td>
+                    <td id="total-lucro">R$ 0,00</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- ABA 3: OFICINAS PARCEIRAS                   -->
+    <!-- ============================================ -->
+    <div id="aba-oficinas" class="tab-content">
+        <h3>🔧 Cadastro de Oficinas Parceiras</h3>
+        
+        <div class="config-group">
+            <label>Nome da Oficina</label>
+            <input type="text" id="oficina_nome" placeholder="Ex: Oficina do João">
+            
+            <label>Endereço</label>
+            <input type="text" id="oficina_endereco" placeholder="Rua, número, bairro">
+            
+            <label>Telefone</label>
+            <input type="text" id="oficina_telefone" placeholder="(31) 99999-9999">
+            
+            <label>Especialidade</label>
+            <input type="text" id="oficina_especialidade" placeholder="Ex: Motos, Elétrica...">
+            
+            <button class="btn-salvar" onclick="cadastrarOficina()">Cadastrar Oficina</button>
+        </div>
+
+        <h3>📌 Oficinas Cadastradas</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Endereço</th>
+                    <th>Telefone</th>
+                    <th>Especialidade</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="lista-oficinas">
+                <tr>
+                    <td colspan="5" style="text-align: center; color: #999;">Nenhuma oficina cadastrada.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ============================ -->
+    <!-- LOCALIZAÇÃO E STATUS        -->
+    <!-- ============================ -->
+    <div style="margin-top: 30px;">
+        <section class="card">
+            <h2>📍 Localização Atual (APK)</h2>
+            <p>Cidade: <span id="cidade">Não definida</span></p>
+            <p>Latitude: <span id="lat">--</span></p>
+            <p>Longitude: <span id="lon">--</span></p>
+            <button id="atualizarLocalizacao">Atualizar localização</button>
+        </section>
+
+        <section class="card" style="background: #fff3cd; border-left: 4px solid #ffc107;">
+            <h2 style="color: #856404;">⚠️ IMPORTANTE - GPS</h2>
+            <p style="color: #856404; font-size: 14px;"><strong>📱 Para o GPS funcionar em movimento:</strong></p>
+            <ul style="color: #856404; font-size: 13px; margin-top: 10px; padding-left: 20px;">
+                <li>✅ Deixe esta página <strong>ABERTA</strong> no celular</li>
+                <li>✅ Não feche o navegador</li>
+                <li>✅ Não bloqueie o celular</li>
+                <li>✅ Mantenha a <strong>tela ligada</strong></li>
+                <li>❌ Se fechar, o GPS <strong>PARA</strong> de atualizar</li>
+            </ul>
+            <div style="margin-top: 15px; padding: 10px; background: #fff; border-radius: 8px;">
+                <span id="statusGPS" style="font-weight: bold;">🔄 GPS aguardando...</span>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>📊 Status do Sistema</h2>
+            <p>Sistema: <span class="online">● Online</span></p>
+            <p>Geoapify: <span id="statusGeo">Conectado</span></p>
+            <p>Cloudflare: <span id="statusCloud">Conectado</span></p>
+        </section>
+    </div>
+
+</div>
 
 <!-- ============================ -->
-<!-- TABELA DE PREÇOS            -->
+<!-- SCRIPTS                     -->
 <!-- ============================ -->
+<script>
+    // Função para alternar entre as abas
+    function abrirAba(idAba, botao) {
+        // Esconde todas as abas
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        // Remove a classe ativa de todos os botões
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        
+        // Mostra a aba clicada e ativa o botão
+        document.getElementById(idAba).classList.add('active');
+        botao.classList.add('active');
+    }
 
-<section class="card">
+    // Função para carregar os valores salvos no localStorage
+    function carregarConfiguracoes() {
+        const campos = [
+            'preco_00_05', 'preco_05_0830', 'preco_0831_14', 'preco_14_18', 
+            'preco_18_20', 'preco_20_22', 'preco_22_2359',
+            'gasolina', 'consumo', 'depreciacao', 'manutencao'
+        ];
+        
+        campos.forEach(id => {
+            const valor = localStorage.getItem(id);
+            const input = document.getElementById(id);
+            if (input && valor) input.value = valor;
+        });
+    }
 
-<h2>
+    // Função para salvar os preços por horário
+    function salvarPrecosHorarios() {
+        const campos = ['preco_00_05', 'preco_05_0830', 'preco_0831_14', 'preco_14_18', 'preco_18_20', 'preco_20_22', 'preco_22_2359'];
+        campos.forEach(id => {
+            const valor = document.getElementById(id).value;
+            if (valor) localStorage.setItem(id, valor);
+            else localStorage.removeItem(id);
+        });
+        alert("✅ Preços por horário salvos com sucesso!");
+    }
 
-💰 Tabela de Preços
+    // Função para salvar os custos operacionais
+    function salvarCustosOperacionais() {
+        const campos = ['gasolina', 'consumo', 'depreciacao', 'manutencao'];
+        campos.forEach(id => {
+            const valor = document.getElementById(id).value;
+            if (valor) localStorage.setItem(id, valor);
+            else localStorage.removeItem(id);
+        });
+        alert("✅ Custos operacionais salvos com sucesso!");
+    }
 
-</h2>
+    // Função para carregar as oficinas do localStorage
+    function carregarOficinas() {
+        const oficinas = JSON.parse(localStorage.getItem('oficinas_parceiras') || '[]');
+        const tbody = document.getElementById('lista-oficinas');
+        
+        if (oficinas.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999;">Nenhuma oficina cadastrada.</td></tr>';
+            return;
+        }
 
-<label>
+        tbody.innerHTML = oficinas.map((oficina, index) => `
+            <tr>
+                <td>${oficina.nome}</td>
+                <td>${oficina.endereco}</td>
+                <td>${oficina.telefone}</td>
+                <td>${oficina.especialidade}</td>
+                <td>
+                    <button onclick="excluirOficina(${index})" style="color: red; background: none; border: none; cursor: pointer;">🗑️ Excluir</button>
+                </td>
+            </tr>
+        `).join('');
+    }
 
-Até 20 km
+    // Função para cadastrar uma oficina
+    function cadastrarOficina() {
+        const nome = document.getElementById('oficina_nome').value;
+        const endereco = document.getElementById('oficina_endereco').value;
+        const telefone = document.getElementById('oficina_telefone').value;
+        const especialidade = document.getElementById('oficina_especialidade').value;
 
-</label>
+        if (!nome || !endereco || !telefone) {
+            alert("Preencha pelo menos Nome, Endereço e Telefone.");
+            return;
+        }
 
-<input
-type="number"
-id="ate20"
-value="120">
+        const oficinas = JSON.parse(localStorage.getItem('oficinas_parceiras') || '[]');
+        oficinas.push({ nome, endereco, telefone, especialidade });
+        localStorage.setItem('oficinas_parceiras', JSON.stringify(oficinas));
 
-<label>
+        // Limpar campos
+        document.getElementById('oficina_nome').value = '';
+        document.getElementById('oficina_endereco').value = '';
+        document.getElementById('oficina_telefone').value = '';
+        document.getElementById('oficina_especialidade').value = '';
 
-Valor por km
-(20 a 40 km)
+        carregarOficinas();
+        alert("✅ Oficina cadastrada com sucesso!");
+    }
 
-</label>
+    // Função para excluir uma oficina
+    function excluirOficina(index) {
+        if (!confirm("Tem certeza que deseja excluir esta oficina?")) return;
+        const oficinas = JSON.parse(localStorage.getItem('oficinas_parceiras') || '[]');
+        oficinas.splice(index, 1);
+        localStorage.setItem('oficinas_parceiras', JSON.stringify(oficinas));
+        carregarOficinas();
+    }
 
-<input
-type="number"
-id="km20a40"
-value="2">
-
-<label>
-
-Valor base
-(acima de 40 km)
-
-</label>
-
-<input
-type="number"
-id="base40"
-value="150">
-
-<label>
-
-Valor por km
-(acima de 40 km)
-
-</label>
-
-<input
-type="number"
-id="kmAcima40"
-value="2.5">
-
-<button
-id="salvar">
-
-Salvar Configurações
-
-</button>
-
-</section>
-
-<!-- ============================ -->
-<!-- STATUS DO SISTEMA           -->
-<!-- ============================ -->
-
-<section
-class="card">
-
-<h2>
-
-📊 Status
-
-</h2>
-
-<p>
-
-Sistema:
-
-<span
-class="online">
-
-● Online
-
-</span>
-
-</p>
-
-<p>
-
-Geoapify:
-
-<span
-id="statusGeo">
-
-Conectado
-
-</span>
-
-</p>
-
-<p>
-
-Cloudflare:
-
-<span
-id="statusCloud">
-
-Conectado
-
-</span>
-
-</p>
-
-</section>
+    // Inicialização
+    document.addEventListener("DOMContentLoaded", () => {
+        carregarConfiguracoes();
+        carregarOficinas();
+    });
+</script>
 
 <script src="js/admin.js"></script>
 
-</div>
-
 </body>
-
 </html>
