@@ -275,6 +275,38 @@ async function calcularOrcamento() {
         const mensagem = `🚚 *NOVO ORÇAMENTO - VMW Moto-Reboques*\n\n👤 Nome: ${nome.value}\n📞 WhatsApp: ${telefone.value}\n🏍 Moto: ${moto.value}\n📍 Retirada: ${retirada.value}\n🏁 Entrega: ${entrega.value}\n📏 Distância Total: ${distanciaTotal.toFixed(1)} km\n⏱ Tempo estimado: ${Math.round(tempoTotal)} minutos\n💰 Valor: R$ ${valorFinal.toFixed(2)}`;
         
         whatsapp.href = "https://wa.me/5531996488546?text=" + encodeURIComponent(mensagem);
+        // ==========================================
+// ENVIAR ORÇAMENTO PARA A API (ADMIN)
+// ==========================================
+const dadosOrcamento = {
+    data: new Date().toISOString(),
+    nome: nome.value,
+    telefone: telefone.value,
+    moto: moto.value,
+    retirada: retirada.value,
+    entrega: entrega.value,
+    kmTotal: distanciaTotal.toFixed(1),
+    valor: valorFinal.toFixed(2),
+    custo: (custoCombustivel + custoDepreciacao).toFixed(2),
+    lucro: (valorFinal - (custoCombustivel + custoDepreciacao)).toFixed(2),
+    status: "pendente"
+};
+
+try {
+    const resposta = await fetch(API_URL + "/orcamento", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dadosOrcamento)
+    });
+    
+    if (resposta.ok) {
+        console.log("✅ Orçamento enviado para o Admin:", dadosOrcamento);
+    } else {
+        console.error("❌ Erro ao enviar orçamento para o Admin:", await resposta.text());
+    }
+} catch (e) {
+    console.error("❌ Erro de rede ao enviar orçamento:", e);
+}
 
         const dadosOrcamento = {
             data: new Date().toISOString(),
