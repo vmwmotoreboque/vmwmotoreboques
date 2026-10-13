@@ -1,7 +1,6 @@
 //==================================================
-// VMW MOTO-REBOQUES - SCRIPT.JS (VERSÃO 4.1.0)
-// LOCAL ONLINE + RETIRADA + ENTREGA + VOLTA BASE
-// ENVIO DE GPS A CADA 10 SEGUNDOS
+// VMW MOTO-REBOQUES - SCRIPT.JS (VERSÃO 6.0.0)
+// CORRIGIDO: SEM DUPLICAÇÃO + GPS + CÁLCULO COMPLETO
 //==================================================
 
 const API_KEY = "1c1bd45c2e5a431b8e45a47d2c57d950";
@@ -12,13 +11,13 @@ const BASE_LAT = -19.903006;
 const BASE_LNG = -43.980724;
 
 // INTERVALO DE ENVIO DO GPS (10 SEGUNDOS)
-const GPS_INTERVALO = 10000; // 10.000 milissegundos = 10 segundos
+const GPS_INTERVALO = 10000;
 
 //==============================================
 // FORÇAR RECARGA DE CONFIGURAÇÕES
 //==============================================
 
-const VERSAO_SISTEMA = "4.1.0"; 
+const VERSAO_SISTEMA = "6.0.0"; 
 const versaoAtual = localStorage.getItem("vmw_versao");
 
 if (versaoAtual !== VERSAO_SISTEMA) {
@@ -70,12 +69,10 @@ const whatsapp = document.getElementById("enviarWhatsapp");
 
 function carregarConfiguracoesLocais() {
     const config = {};
-    
     config.gasolina = parseFloat(localStorage.getItem('gasolina')) || 5.80;
     config.consumo = parseFloat(localStorage.getItem('consumo')) || 9;
     config.depreciacao = parseFloat(localStorage.getItem('depreciacao')) || 0.50;
     config.manutencao = parseFloat(localStorage.getItem('manutencao')) || 0.30;
-    
     config.preco_00_05 = parseFloat(localStorage.getItem('preco_00_05')) || 0;
     config.preco_05_0830 = parseFloat(localStorage.getItem('preco_05_0830')) || 0;
     config.preco_0831_14 = parseFloat(localStorage.getItem('preco_0831_14')) || 0;
@@ -83,12 +80,10 @@ function carregarConfiguracoesLocais() {
     config.preco_18_20 = parseFloat(localStorage.getItem('preco_18_20')) || 0;
     config.preco_20_22 = parseFloat(localStorage.getItem('preco_20_22')) || 0;
     config.preco_22_2359 = parseFloat(localStorage.getItem('preco_22_2359')) || 0;
-    
     return config;
 }
 
 async function carregarLocalizacaoAPK() {
-    // 1. Tentar da API (localização atual do APK)
     try {
         const res = await fetch(API_URL);
         if (res.ok) {
@@ -106,7 +101,6 @@ async function carregarLocalizacaoAPK() {
         console.warn("⚠️ Não foi possível carregar localização da API:", e);
     }
 
-    // 2. Tentar do LocalStorage
     const latLocal = parseFloat(localStorage.getItem("latitude"));
     const lngLocal = parseFloat(localStorage.getItem("longitude"));
     if (!isNaN(latLocal) && !isNaN(lngLocal)) {
@@ -114,7 +108,6 @@ async function carregarLocalizacaoAPK() {
         return [latLocal, lngLocal];
     }
 
-    // 3. Fallback: Base
     console.log("📍 Usando Base (Vila Rica) como fallback");
     return [BASE_LAT, BASE_LNG];
 }
@@ -275,39 +268,10 @@ async function calcularOrcamento() {
         const mensagem = `🚚 *NOVO ORÇAMENTO - VMW Moto-Reboques*\n\n👤 Nome: ${nome.value}\n📞 WhatsApp: ${telefone.value}\n🏍 Moto: ${moto.value}\n📍 Retirada: ${retirada.value}\n🏁 Entrega: ${entrega.value}\n📏 Distância Total: ${distanciaTotal.toFixed(1)} km\n⏱ Tempo estimado: ${Math.round(tempoTotal)} minutos\n💰 Valor: R$ ${valorFinal.toFixed(2)}`;
         
         whatsapp.href = "https://wa.me/5531996488546?text=" + encodeURIComponent(mensagem);
+
         // ==========================================
-// ENVIAR ORÇAMENTO PARA A API (ADMIN)
-// ==========================================
-const dadosOrcamento = {
-    data: new Date().toISOString(),
-    nome: nome.value,
-    telefone: telefone.value,
-    moto: moto.value,
-    retirada: retirada.value,
-    entrega: entrega.value,
-    kmTotal: distanciaTotal.toFixed(1),
-    valor: valorFinal.toFixed(2),
-    custo: (custoCombustivel + custoDepreciacao).toFixed(2),
-    lucro: (valorFinal - (custoCombustivel + custoDepreciacao)).toFixed(2),
-    status: "pendente"
-};
-
-try {
-    const resposta = await fetch(API_URL + "/orcamento", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dadosOrcamento)
-    });
-    
-    if (resposta.ok) {
-        console.log("✅ Orçamento enviado para o Admin:", dadosOrcamento);
-    } else {
-        console.error("❌ Erro ao enviar orçamento para o Admin:", await resposta.text());
-    }
-} catch (e) {
-    console.error("❌ Erro de rede ao enviar orçamento:", e);
-}
-
+        // ENVIAR ORÇAMENTO PARA A API (ÚNICO BLOCO)
+        // ==========================================
         const dadosOrcamento = {
             data: new Date().toISOString(),
             nome: nome.value,
@@ -323,14 +287,19 @@ try {
         };
 
         try {
-            await fetch(API_URL + "/orcamento", {
+            const resposta = await fetch(API_URL + "/orcamento", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(dadosOrcamento)
             });
-            console.log("✅ Orçamento enviado para o Admin");
+            
+            if (resposta.ok) {
+                console.log("✅ Orçamento enviado para o Admin:", dadosOrcamento);
+            } else {
+                console.error("❌ Erro ao enviar orçamento:", await resposta.text());
+            }
         } catch (e) {
-            console.warn("⚠️ Erro ao enviar orçamento:", e);
+            console.error("❌ Erro de rede ao enviar orçamento:", e);
         }
 
     } catch (erro) {
@@ -375,7 +344,7 @@ function configurarAutocomplete(campoId, listaId) {
 }
 
 //==============================================
-// GPS - APENAS PARA O APK (ENVIA A CADA 10 SEGUNDOS)
+// GPS - APENAS PARA O APK
 //==============================================
 
 function obterGeolocation() {
@@ -465,7 +434,6 @@ async function iniciarRastreamento() {
         console.log("✅ Permissão concedida");
         console.log(`⏳ Iniciando envio a cada ${GPS_INTERVALO / 1000} segundos...`);
 
-        // Envia imediatamente a primeira posição
         const primeiraPos = await geolocation.getCurrentPosition({
             enableHighAccuracy: true,
             timeout: 15000,
@@ -473,7 +441,6 @@ async function iniciarRastreamento() {
         });
         await enviarPosicao(primeiraPos);
 
-        // Envia a cada X segundos (intervalo definido)
         intervaloGPS = setInterval(async () => {
             try {
                 const pos = await geolocation.getCurrentPosition({
@@ -501,7 +468,7 @@ async function iniciarRastreamento() {
 document.addEventListener("DOMContentLoaded", async () => {
     try {
         console.log("🚀 Inicializando VMW Moto-Reboques...");
-        console.log("🚀 VERSÃO 4.1.0 - GPS A CADA 10 SEGUNDOS");
+        console.log("🚀 VERSÃO 6.0.0 - CORRIGIDO");
 
         carregarConfiguracoesLocais();
         console.log("✅ Configurações carregadas");

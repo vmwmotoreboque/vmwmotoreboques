@@ -1,6 +1,6 @@
 //==================================================
-// VMW MOTO-REBOQUES - ADMIN.JS (VERSÃO 5.0.0)
-// SINCRONIZAÇÃO COM API
+// VMW MOTO-REBOQUES - ADMIN.JS (VERSÃO 8.0.0)
+// RESTAURADO: LOGIN + SALVAR NA API + ABAS
 //==================================================
 
 const SENHA = "vmw2026";
@@ -33,9 +33,7 @@ async function carregarConfiguracoes() {
         if (!res.ok) throw new Error("Cloudflare offline");
 
         const cfg = await res.json();
-        console.log("📊 Dados carregados da API:", cfg);
 
-        // Localização
         const cidadeEl = document.getElementById("cidade");
         const latEl = document.getElementById("lat");
         const lonEl = document.getElementById("lon");
@@ -44,11 +42,9 @@ async function carregarConfiguracoes() {
         if (latEl) latEl.innerHTML = cfg.latitude != null ? Number(cfg.latitude).toFixed(6) : "--";
         if (lonEl) lonEl.innerHTML = cfg.longitude != null ? Number(cfg.longitude).toFixed(6) : "--";
 
-        // Status GPS
         const statusGPSEl = document.getElementById("statusGPS");
         if (statusGPSEl) statusGPSEl.innerHTML = cfg.status || "offline";
 
-        // Status Cloudflare
         const statusCloudEl = document.getElementById("statusCloud");
         if (statusCloudEl) {
             statusCloudEl.innerHTML = "✅ Conectado";
@@ -66,15 +62,16 @@ async function carregarConfiguracoes() {
             const input = document.getElementById(id);
             if (input && cfg[id] !== undefined) {
                 input.value = cfg[id];
-                localStorage.setItem(id, cfg[id]); // Sincroniza com LocalStorage
+                localStorage.setItem(id, cfg[id]);
             }
         });
 
-        // Oficinas
         if (cfg.oficinas) {
             localStorage.setItem('oficinas_parceiras', JSON.stringify(cfg.oficinas));
             carregarOficinas();
         }
+
+        console.log("📊 Dados carregados:", new Date().toLocaleTimeString());
 
     } catch (e) {
         console.error("Erro ao carregar da API:", e);
@@ -83,7 +80,6 @@ async function carregarConfiguracoes() {
             statusCloudEl.innerHTML = "❌ Offline (usando cache local)";
             statusCloudEl.style.color = "#d60000";
         }
-        // Fallback: carrega do LocalStorage
         carregarConfiguracoesLocais();
         carregarOficinas();
     } finally {
@@ -110,19 +106,17 @@ function carregarConfiguracoesLocais() {
 }
 
 //==============================================
-// FUNÇÃO: SALVAR CONFIGURAÇÕES NA API
+// FUNÇÃO: SALVAR NA API
 //==============================================
 
-async function salvarConfiguracoesNaAPI() {
+async function salvarCloudflare() {
     try {
-        // 1. Pega os dados atuais da API
         const resAtual = await fetch(API_URL);
         let configAtual = {};
         if (resAtual.ok) {
             configAtual = await resAtual.json();
         }
 
-        // 2. Monta o novo objeto de configuração
         const novaConfig = {
             ...configAtual,
             preco_00_05: document.getElementById('preco_00_05').value,
@@ -139,7 +133,6 @@ async function salvarConfiguracoesNaAPI() {
             oficinas: JSON.parse(localStorage.getItem('oficinas_parceiras') || '[]')
         };
 
-        // 3. Envia para a API
         const res = await fetch(API_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -148,7 +141,6 @@ async function salvarConfiguracoesNaAPI() {
 
         if (!res.ok) throw new Error("Falha ao salvar na API");
 
-        // 4. Salva no LocalStorage também (backup)
         Object.keys(novaConfig).forEach(key => {
             if (typeof novaConfig[key] === 'string' || typeof novaConfig[key] === 'number') {
                 localStorage.setItem(key, novaConfig[key]);
@@ -163,7 +155,6 @@ async function salvarConfiguracoesNaAPI() {
 
     } catch (e) {
         console.error("❌ Erro ao salvar na API:", e);
-        // Fallback: salva só no LocalStorage
         const campos = ['preco_00_05', 'preco_05_0830', 'preco_0831_14', 'preco_14_18', 'preco_18_20', 'preco_20_22', 'preco_22_2359', 'gasolina', 'consumo', 'depreciacao', 'manutencao'];
         campos.forEach(id => {
             const valor = document.getElementById(id).value;
@@ -178,21 +169,23 @@ async function salvarConfiguracoesNaAPI() {
 //==============================================
 
 async function salvarPrecosHorarios() {
-    const sucesso = await salvarConfiguracoesNaAPI();
-    if (sucesso) {
-        alert("✅ Preços por horário salvos na nuvem!");
-    } else {
-        alert("⚠️ Salvo apenas no celular (sem internet).");
-    }
+    const campos = ['preco_00_05', 'preco_05_0830', 'preco_0831_14', 'preco_14_18', 'preco_18_20', 'preco_20_22', 'preco_22_2359'];
+    campos.forEach(id => {
+        const valor = document.getElementById(id).value;
+        if (valor) localStorage.setItem(id, valor);
+    });
+    const sucesso = await salvarCloudflare();
+    alert(sucesso ? "✅ Preços salvos na nuvem!" : "⚠️ Salvo apenas no celular (sem internet).");
 }
 
 async function salvarCustosOperacionais() {
-    const sucesso = await salvarConfiguracoesNaAPI();
-    if (sucesso) {
-        alert("✅ Custos operacionais salvos na nuvem!");
-    } else {
-        alert("⚠️ Salvo apenas no celular (sem internet).");
-    }
+    const campos = ['gasolina', 'consumo', 'depreciacao', 'manutencao'];
+    campos.forEach(id => {
+        const valor = document.getElementById(id).value;
+        if (valor) localStorage.setItem(id, valor);
+    });
+    const sucesso = await salvarCloudflare();
+    alert(sucesso ? "✅ Custos salvos na nuvem!" : "⚠️ Salvo apenas no celular (sem internet).");
 }
 
 //==============================================
@@ -202,7 +195,6 @@ async function salvarCustosOperacionais() {
 function carregarOficinas() {
     const oficinas = JSON.parse(localStorage.getItem('oficinas_parceiras') || '[]');
     const tbody = document.getElementById('lista-oficinas');
-    
     if (!tbody) return;
 
     if (oficinas.length === 0) {
@@ -216,9 +208,7 @@ function carregarOficinas() {
             <td>${oficina.endereco}</td>
             <td>${oficina.telefone}</td>
             <td>${oficina.especialidade}</td>
-            <td>
-                <button onclick="excluirOficina(${index})" style="color: red; background: none; border: none; cursor: pointer;">🗑️ Excluir</button>
-            </td>
+            <td><button onclick="excluirOficina(${index})" style="color: red; background: none; border: none; cursor: pointer;">🗑️ Excluir</button></td>
         </tr>
     `).join('');
 }
@@ -244,14 +234,8 @@ async function cadastrarOficina() {
     document.getElementById('oficina_especialidade').value = '';
 
     carregarOficinas();
-    
-    // Salva na API
-    const sucesso = await salvarConfiguracoesNaAPI();
-    if (sucesso) {
-        alert("✅ Oficina cadastrada e sincronizada!");
-    } else {
-        alert("⚠️ Oficina salva apenas no celular (sem internet).");
-    }
+    const sucesso = await salvarCloudflare();
+    alert(sucesso ? "✅ Oficina cadastrada e sincronizada!" : "⚠️ Oficina salva apenas no celular.");
 }
 
 async function excluirOficina(index) {
@@ -260,8 +244,31 @@ async function excluirOficina(index) {
     oficinas.splice(index, 1);
     localStorage.setItem('oficinas_parceiras', JSON.stringify(oficinas));
     carregarOficinas();
-    
-    await salvarConfiguracoesNaAPI();
+    await salvarCloudflare();
+}
+
+//==============================================
+// SESSÃO
+//==============================================
+
+function salvarSessao() {
+    localStorage.setItem("sessaoAtiva", "true");
+    localStorage.setItem("ultimaSessao", new Date().toISOString());
+}
+
+function restaurarSessao() {
+    const sessaoAtiva = localStorage.getItem("sessaoAtiva");
+    if (sessaoAtiva === "true") {
+        telaLogin.style.display = "none";
+        painel.style.display = "block";
+        (async () => {
+            await carregarConfiguracoes();
+            await verificarStatus();
+            carregarOficinas();
+        })();
+        return true;
+    }
+    return false;
 }
 
 //==============================================
@@ -290,30 +297,6 @@ async function verificarStatus() {
             statusCloudEl.style.color = "#d60000";
         }
     }
-}
-
-//==============================================
-// SESSÃO
-//==============================================
-
-function salvarSessao() {
-    localStorage.setItem("sessaoAtiva", "true");
-    localStorage.setItem("ultimaSessao", new Date().toISOString());
-}
-
-function restaurarSessao() {
-    const sessaoAtiva = localStorage.getItem("sessaoAtiva");
-    if (sessaoAtiva === "true") {
-        telaLogin.style.display = "none";
-        painel.style.display = "block";
-        (async () => {
-            await carregarConfiguracoes();
-            await verificarStatus();
-            carregarOficinas();
-        })();
-        return true;
-    }
-    return false;
 }
 
 //==============================================
@@ -349,6 +332,7 @@ btnSair.addEventListener("click", () => {
     telaLogin.style.display = "flex";
     campoSenha.value = "";
     erro.style.display = "none";
+    console.log("🔒 Sessão encerrada");
 });
 
 btnAtualizar.addEventListener("click", async () => {
@@ -374,7 +358,7 @@ document.addEventListener("DOMContentLoaded", () => {
         telaLogin.style.display = "flex";
         painel.style.display = "none";
     }
-    console.log("✅ ADMIN.JS CARREGADO (VERSÃO 5.0.0)");
+    console.log("✅ ADMIN.JS CARREGADO (VERSÃO 8.0.0)");
 });
 
 setInterval(carregarConfiguracoes, 30000);
