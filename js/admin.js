@@ -1,6 +1,6 @@
 //==================================================
-// VMW MOTO-REBOQUES - ADMIN.JS (VERSÃO 8.0.0)
-// RESTAURADO: LOGIN + SALVAR NA API + ABAS
+// VMW MOTO-REBOQUES - ADMIN.JS (VERSÃO 10.0.0)
+// CORRIGIDO: SALVA NA API DE FORMA CORRETA
 //==================================================
 
 const SENHA = "vmw2026";
@@ -33,6 +33,7 @@ async function carregarConfiguracoes() {
         if (!res.ok) throw new Error("Cloudflare offline");
 
         const cfg = await res.json();
+        console.log("📊 Dados recebidos da API:", cfg);
 
         const cidadeEl = document.getElementById("cidade");
         const latEl = document.getElementById("lat");
@@ -71,13 +72,17 @@ async function carregarConfiguracoes() {
             carregarOficinas();
         }
 
-        console.log("📊 Dados carregados:", new Date().toLocaleTimeString());
+        if (cfg.orcamentos) {
+            carregarOrcamentos(cfg.orcamentos);
+        }
+
+        console.log("✅ Dados carregados:", new Date().toLocaleTimeString());
 
     } catch (e) {
         console.error("Erro ao carregar da API:", e);
         const statusCloudEl = document.getElementById("statusCloud");
         if (statusCloudEl) {
-            statusCloudEl.innerHTML = "❌ Offline (usando cache local)";
+            statusCloudEl.innerHTML = "❌ Offline";
             statusCloudEl.style.color = "#d60000";
         }
         carregarConfiguracoesLocais();
@@ -88,37 +93,63 @@ async function carregarConfiguracoes() {
 }
 
 //==============================================
-// FUNÇÃO: CARREGAR DO LOCALSTORAGE (FALLBACK)
+// FUNÇÃO: CARREGAR ORÇAMENTOS
 //==============================================
 
-function carregarConfiguracoesLocais() {
-    const campos = [
-        'preco_00_05', 'preco_05_0830', 'preco_0831_14', 'preco_14_18', 
-        'preco_18_20', 'preco_20_22', 'preco_22_2359',
-        'gasolina', 'consumo', 'depreciacao', 'manutencao'
-    ];
-    
-    campos.forEach(id => {
-        const valor = localStorage.getItem(id);
-        const input = document.getElementById(id);
-        if (input && valor) input.value = valor;
-    });
+function carregarOrcamentos(orcamentos) {
+    const tbody = document.getElementById('lista-orcamentos');
+    if (!tbody) return;
+
+    if (!orcamentos || orcamentos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: #999;">Nenhum orçamento recebido ainda.</td></tr>';
+        return;
+    }
+
+    let totalValor = 0;
+    let totalCusto = 0;
+    let totalLucro = 0;
+
+    tbody.innerHTML = orcamentos.map((orc) => {
+        const valor = parseFloat(orc.valor) || 0;
+        const custo = parseFloat(orc.custo) || 0;
+        const lucro = parseFloat(orc.lucro) || 0;
+        
+        totalValor += valor;
+        totalCusto += custo;
+        totalLucro += lucro;
+
+        const statusClass = orc.status === 'executado' ? 'status-executado' : 'status-pendente';
+        const statusText = orc.status === 'executado' ? '✅ Executado' : '⏳ Pendente';
+
+        return `
+            <tr>
+                <td>${new Date(orc.data).toLocaleDateString('pt-BR')}</td>
+                <td>${orc.nome || '--'}</td>
+                <td>${orc.telefone || '--'}</td>
+                <td>${orc.retirada || '--'}</td>
+                <td>${orc.entrega || '--'}</td>
+                <td>${orc.kmTotal || '--'} km</td>
+                <td>R$ ${valor.toFixed(2)}</td>
+                <td>R$ ${custo.toFixed(2)}</td>
+                <td>R$ ${lucro.toFixed(2)}</td>
+                <td class="${statusClass}">${statusText}</td>
+            </tr>
+        `;
+    }).join('');
+
+    document.getElementById('total-valor').innerHTML = 'R$ ' + totalValor.toFixed(2);
+    document.getElementById('total-custo').innerHTML = 'R$ ' + totalCusto.toFixed(2);
+    document.getElementById('total-lucro').innerHTML = 'R$ ' + totalLucro.toFixed(2);
 }
 
 //==============================================
-// FUNÇÃO: SALVAR NA API
+// FUNÇÃO: SALVAR NA API (CORRIGIDA)
 //==============================================
 
 async function salvarCloudflare() {
     try {
-        const resAtual = await fetch(API_URL);
-        let configAtual = {};
-        if (resAtual.ok) {
-            configAtual = await resAtual.json();
-        }
-
-        const novaConfig = {
-            ...configAtual,
+        // 1. Monta o objeto com os valores atuais
+        const config = {
             preco_00_05: document.getElementById('preco_00_05').value,
             preco_05_0830: document.getElementById('preco_05_0830').value,
             preco_0831_14: document.getElementById('preco_0831_14').value,
@@ -133,28 +164,35 @@ async function salvarCloudflare() {
             oficinas: JSON.parse(localStorage.getItem('oficinas_parceiras') || '[]')
         };
 
+        console.log("📤 Enviando para a API:", config);
+
+        // 2. Envia para a API
         const res = await fetch(API_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(novaConfig)
+            body: JSON.stringify(config)
         });
 
-        if (!res.ok) throw new Error("Falha ao salvar na API");
-
-        Object.keys(novaConfig).forEach(key => {
-            if (typeof novaConfig[key] === 'string' || typeof novaConfig[key] === 'number') {
-                localStorage.setItem(key, novaConfig[key]);
-            }
-        });
-        if (novaConfig.oficinas) {
-            localStorage.setItem('oficinas_parceiras', JSON.stringify(novaConfig.oficinas));
+        if (!res.ok) {
+            const erro = await res.text();
+            throw new Error("API retornou: " + res.status + " - " + erro);
         }
 
-        console.log("✅ Configurações salvas na API");
+        const resposta = await res.json();
+        console.log("✅ Resposta da API:", resposta);
+
+        // 3. Salva no localStorage como backup
+        Object.keys(config).forEach(key => {
+            if (typeof config[key] === 'string' || typeof config[key] === 'number') {
+                localStorage.setItem(key, config[key]);
+            }
+        });
+
         return true;
 
     } catch (e) {
         console.error("❌ Erro ao salvar na API:", e);
+        // Fallback: salva apenas no localStorage
         const campos = ['preco_00_05', 'preco_05_0830', 'preco_0831_14', 'preco_14_18', 'preco_18_20', 'preco_20_22', 'preco_22_2359', 'gasolina', 'consumo', 'depreciacao', 'manutencao'];
         campos.forEach(id => {
             const valor = document.getElementById(id).value;
@@ -358,7 +396,7 @@ document.addEventListener("DOMContentLoaded", () => {
         telaLogin.style.display = "flex";
         painel.style.display = "none";
     }
-    console.log("✅ ADMIN.JS CARREGADO (VERSÃO 8.0.0)");
+    console.log("✅ ADMIN.JS CARREGADO (VERSÃO 10.0.0)");
 });
 
 setInterval(carregarConfiguracoes, 30000);
