@@ -1,6 +1,6 @@
 //==================================================
-// VMW MOTO-REBOQUES - SCRIPT.JS (VERSÃO 7.0.0)
-// CORREÇÃO: NÃO SOBRESCREVE VALORES DA API
+// VMW MOTO-REBOQUES - SCRIPT.JS (VERSÃO 8.0.0)
+// COM TOGGLE DE LOCALIZAÇÃO (APK vs VILA RICA)
 //==================================================
 
 const API_KEY = "1c1bd45c2e5a431b8e45a47d2c57d950";
@@ -9,13 +9,13 @@ const API_URL = "https://vmw-config-api.vmwreboques.workers.dev";
 const BASE_LAT = -19.903006;
 const BASE_LNG = -43.980724;
 
-const GPS_INTERVALO = 10000;
+const GPS_INTERVALO = 30000; // 30 segundos (mantido)
 
 //==============================================
 // FORÇAR RECARGA DE CONFIGURAÇÕES
 //==============================================
 
-const VERSAO_SISTEMA = "7.0.0"; 
+const VERSAO_SISTEMA = "8.0.0"; 
 const versaoAtual = localStorage.getItem("vmw_versao");
 
 if (versaoAtual !== VERSAO_SISTEMA) {
@@ -62,73 +62,77 @@ const valor = document.getElementById("valor");
 const whatsapp = document.getElementById("enviarWhatsapp");
 
 //==============================================
-// CARREGAR CONFIGURAÇÕES DA API (SEM SOBRESCREVER)
+// FUNÇÃO: VERIFICAR MODO DE LOCALIZAÇÃO
+//==============================================
+
+function isModoAPK() {
+    return localStorage.getItem('modo_localizacao') === 'true';
+}
+
+//==============================================
+// CARREGAR CONFIGURAÇÕES
 //==============================================
 
 async function carregarConfiguracoes() {
-    const config = {};
+    console.log("📡 Buscando configurações da API...");
     
-    // 1. Tentar buscar da API (com timeout de 10 segundos)
     try {
-        console.log("📡 Buscando configurações da API...");
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        
-        const res = await fetch(API_URL, { signal: controller.signal });
-        clearTimeout(timeoutId);
-        
+        const res = await fetch(API_URL);
         if (res.ok) {
             const apiConfig = await res.json();
-            console.log("✅ Configurações carregadas da API:", apiConfig);
+            console.log("✅ Configurações recebidas da API:", apiConfig);
             
-            // Usa os valores da API (não os padrões)
-            config.gasolina = parseFloat(apiConfig.gasolina) || 5.80;
-            config.consumo = parseFloat(apiConfig.consumo) || 9;
-            config.depreciacao = parseFloat(apiConfig.depreciacao) || 0.50;
-            config.manutencao = parseFloat(apiConfig.manutencao) || 0.30;
+            const config = {
+                gasolina: parseFloat(apiConfig.gasolina) || 5.80,
+                consumo: parseFloat(apiConfig.consumo) || 9,
+                depreciacao: parseFloat(apiConfig.depreciacao) || 0.50,
+                manutencao: parseFloat(apiConfig.manutencao) || 0.30,
+                preco_00_05: parseFloat(apiConfig.preco_00_05) || 0,
+                preco_05_0830: parseFloat(apiConfig.preco_05_0830) || 0,
+                preco_0831_14: parseFloat(apiConfig.preco_0831_14) || 0,
+                preco_14_18: parseFloat(apiConfig.preco_14_18) || 0,
+                preco_18_20: parseFloat(apiConfig.preco_18_20) || 0,
+                preco_20_22: parseFloat(apiConfig.preco_20_22) || 0,
+                preco_22_2359: parseFloat(apiConfig.preco_22_2359) || 0
+            };
             
-            config.preco_00_05 = parseFloat(apiConfig.preco_00_05) || 0;
-            config.preco_05_0830 = parseFloat(apiConfig.preco_05_0830) || 0;
-            config.preco_0831_14 = parseFloat(apiConfig.preco_0831_14) || 0;
-            config.preco_14_18 = parseFloat(apiConfig.preco_14_18) || 0;
-            config.preco_18_20 = parseFloat(apiConfig.preco_18_20) || 0;
-            config.preco_20_22 = parseFloat(apiConfig.preco_20_22) || 0;
-            config.preco_22_2359 = parseFloat(apiConfig.preco_22_2359) || 0;
-            
-            // Salvar no localStorage para uso offline
             Object.keys(config).forEach(key => {
                 localStorage.setItem(key, config[key]);
             });
             
             console.log("💾 Configurações salvas no LocalStorage");
             return config;
-        } else {
-            throw new Error("API retornou status " + res.status);
         }
     } catch (e) {
-        console.warn("⚠️ Não foi possível carregar da API:", e.message);
+        console.warn("⚠️ Erro ao carregar da API:", e.message);
     }
     
-    // 2. Fallback: usar LocalStorage (se a API falhar)
     console.log("📋 Usando configurações do LocalStorage (fallback)...");
-    config.gasolina = parseFloat(localStorage.getItem('gasolina')) || 5.80;
-    config.consumo = parseFloat(localStorage.getItem('consumo')) || 9;
-    config.depreciacao = parseFloat(localStorage.getItem('depreciacao')) || 0.50;
-    config.manutencao = parseFloat(localStorage.getItem('manutencao')) || 0.30;
+    const config = {
+        gasolina: parseFloat(localStorage.getItem('gasolina')) || 5.80,
+        consumo: parseFloat(localStorage.getItem('consumo')) || 9,
+        depreciacao: parseFloat(localStorage.getItem('depreciacao')) || 0.50,
+        manutencao: parseFloat(localStorage.getItem('manutencao')) || 0.30,
+        preco_00_05: parseFloat(localStorage.getItem('preco_00_05')) || 0,
+        preco_05_0830: parseFloat(localStorage.getItem('preco_05_0830')) || 0,
+        preco_0831_14: parseFloat(localStorage.getItem('preco_0831_14')) || 0,
+        preco_14_18: parseFloat(localStorage.getItem('preco_14_18')) || 0,
+        preco_18_20: parseFloat(localStorage.getItem('preco_18_20')) || 0,
+        preco_20_22: parseFloat(localStorage.getItem('preco_20_22')) || 0,
+        preco_22_2359: parseFloat(localStorage.getItem('preco_22_2359')) || 0
+    };
     
-    config.preco_00_05 = parseFloat(localStorage.getItem('preco_00_05')) || 0;
-    config.preco_05_0830 = parseFloat(localStorage.getItem('preco_05_0830')) || 0;
-    config.preco_0831_14 = parseFloat(localStorage.getItem('preco_0831_14')) || 0;
-    config.preco_14_18 = parseFloat(localStorage.getItem('preco_14_18')) || 0;
-    config.preco_18_20 = parseFloat(localStorage.getItem('preco_18_20')) || 0;
-    config.preco_20_22 = parseFloat(localStorage.getItem('preco_20_22')) || 0;
-    config.preco_22_2359 = parseFloat(localStorage.getItem('preco_22_2359')) || 0;
-    
-    console.log("📋 Configurações do LocalStorage:", config);
     return config;
 }
 
 async function carregarLocalizacaoAPK() {
+    // Se o modo APK estiver desligado, usa a Vila Rica
+    if (!isModoAPK()) {
+        console.log("🏠 Modo Vila Rica ativado (localização fixa)");
+        return [BASE_LAT, BASE_LNG];
+    }
+    
+    // Modo APK: busca a localização atual
     try {
         const res = await fetch(API_URL);
         if (res.ok) {
@@ -298,14 +302,13 @@ async function calcularOrcamento() {
         const valorFinal = valorFaixa + custoCombustivel + custoDepreciacao;
 
         console.log("🧮 CÁLCULO DETALHADO:");
+        console.log("Modo:", isModoAPK() ? "APK (localização atual)" : "Vila Rica (fixo)");
         console.log("KM Local Online -> Retirada:", distanciaAPK.toFixed(2));
         console.log("KM Retirada -> Entrega:", distanciaCliente.toFixed(2));
         console.log("KM Entrega -> Base:", distanciaVolta.toFixed(2));
         console.log("KM Total:", distanciaTotal.toFixed(2));
         console.log("Faixa:", faixaId, "Valor:", valorFaixa);
         console.log("Gasolina:", gasolina, "Consumo:", consumo);
-        console.log("Custo Combustível:", custoCombustivel.toFixed(2));
-        console.log("Custo Depreciação:", custoDepreciacao.toFixed(2));
         console.log("VALOR FINAL:", valorFinal.toFixed(2));
 
         desenharMapa(rotaCliente, origem, destino);
@@ -391,7 +394,7 @@ function configurarAutocomplete(campoId, listaId) {
 }
 
 //==============================================
-// GPS - APENAS PARA O APK
+// GPS - APENAS PARA O APK (ENVIA A CADA 30 SEGUNDOS)
 //==============================================
 
 function obterGeolocation() {
@@ -515,10 +518,11 @@ async function iniciarRastreamento() {
 document.addEventListener("DOMContentLoaded", async () => {
     try {
         console.log("🚀 Inicializando VMW Moto-Reboques...");
-        console.log("🚀 VERSÃO 7.0.0 - NÃO SOBRESCREVE API");
+        console.log("🚀 VERSÃO 8.0.0 - TOGGLE DE LOCALIZAÇÃO");
 
         await carregarConfiguracoes();
         console.log("✅ Configurações carregadas");
+        console.log("📍 Modo:", isModoAPK() ? "APK (localização atual)" : "Vila Rica (fixo)");
 
         const capacitor = (typeof Capacitor !== 'undefined') ? Capacitor : 
                           (typeof window.Capacitor !== 'undefined') ? window.Capacitor : null;

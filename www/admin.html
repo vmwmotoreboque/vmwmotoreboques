@@ -11,9 +11,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
     <style>
-        /* Estilos Básicos para as Abas */
         .admin-tabs {
             display: flex;
             gap: 5px;
@@ -87,41 +88,78 @@
         .btn-salvar:hover {
             background: #b00000;
         }
+        .btn-pdf {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 10px;
+            margin-right: 10px;
+        }
+        .btn-pdf:hover {
+            background: #0d47a1;
+        }
+        .tabela-container {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
             font-size: 13px;
-            margin-top: 15px;
         }
-        th, td {
+        thead th {
+            position: sticky;
+            top: 0;
+            background: #f8f8f8;
+            z-index: 10;
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+            font-weight: 600;
+        }
+        tbody td {
             padding: 10px;
             border: 1px solid #ddd;
             text-align: left;
         }
-        th {
-            background: #f8f8f8;
-            font-weight: 600;
-        }
-        .status-executado {
-            color: green;
-            font-weight: bold;
-        }
-        .status-pendente {
-            color: orange;
-            font-weight: bold;
+        tbody tr:nth-child(even) {
+            background: #fafafa;
         }
         .total-row {
             background: #f0f0f0;
             font-weight: bold;
+        }
+        .btn-excluir {
+            background: #d60000;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        .btn-excluir:hover {
+            background: #b00000;
+        }
+        .acoes-container {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
         }
     </style>
 </head>
 
 <body>
 
-<!-- ============================ -->
-<!-- LOGIN                       -->
-<!-- ============================ -->
+<!-- LOGIN -->
 <div class="login">
     <div class="login-box">
         <img src="imagens/logo.png" class="logo" alt="VMW">
@@ -133,9 +171,7 @@
     </div>
 </div>
 
-<!-- ============================ -->
-<!-- PAINEL PRINCIPAL            -->
-<!-- ============================ -->
+<!-- PAINEL PRINCIPAL -->
 <div class="painel" id="painel">
 
     <header>
@@ -147,14 +183,11 @@
     <div class="admin-tabs">
         <button class="tab-btn active" onclick="abrirAba('aba-calculos', this)">💰 Cálculos e Configurações</button>
         <button class="tab-btn" onclick="abrirAba('aba-orcamentos', this)">📋 Orçamentos Recebidos</button>
-        <button class="tab-btn" onclick="abrirAba('aba-oficinas', this)">🔧 Oficinas Parceiras</button>
+        <button class="tab-btn" onclick="abrirAba('aba-oficinas', this)">🔧 Oficinas e Parcerias</button>
     </div>
 
-    <!-- ============================================ -->
-    <!-- ABA 1: CÁLCULOS E CONFIGURAÇÕES             -->
-    <!-- ============================================ -->
+    <!-- ABA 1: CÁLCULOS -->
     <div id="aba-calculos" class="tab-content active">
-        
         <div class="config-group">
             <h3>⏰ Preços por Faixa de Horário (Valor de Saída)</h3>
             <label>00:00 às 05:00 (Madrugada) - R$</label>
@@ -187,7 +220,7 @@
             <input type="number" id="gasolina" placeholder="5.80" step="0.01">
             
             <label>Consumo do Veículo (KM/L)</label>
-            <input type="number" id="consumo" placeholder="8" step="0.1">
+            <input type="number" id="consumo" placeholder="9" step="0.1">
             
             <label>Depreciação (R$/KM)</label>
             <input type="number" id="depreciacao" placeholder="0.50" step="0.01">
@@ -197,56 +230,57 @@
             
             <button class="btn-salvar" onclick="salvarCustosOperacionais()">Salvar Custos Operacionais</button>
         </div>
-
     </div>
 
-    <!-- ============================================ -->
-    <!-- ABA 2: ORÇAMENTOS RECEBIDOS                 -->
-    <!-- ============================================ -->
+    <!-- ABA 2: ORÇAMENTOS -->
     <div id="aba-orcamentos" class="tab-content">
         <h3>📋 Orçamentos Recebidos</h3>
         <p style="font-size: 13px; color: #666;">Os orçamentos feitos no site aparecerão aqui automaticamente.</p>
         
-        <table>
-            <thead>
-                <tr>
-                    <th>Data</th>
-                    <th>Nome</th>
-                    <th>Telefone</th>
-                    <th>Retirada</th>
-                    <th>Entrega</th>
-                    <th>KM Total</th>
-                    <th>Valor</th>
-                    <th>Custo</th>
-                    <th>Lucro</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody id="lista-orcamentos">
-                <!-- Preenchido pelo JavaScript -->
-                <tr>
-                    <td colspan="10" style="text-align: center; color: #999;">Nenhum orçamento recebido ainda.</td>
-                </tr>
-            </tbody>
-            <tfoot>
-                <tr class="total-row">
-                    <td colspan="6">TOTAIS</td>
-                    <td id="total-valor">R$ 0,00</td>
-                    <td id="total-custo">R$ 0,00</td>
-                    <td id="total-lucro">R$ 0,00</td>
-                    <td></td>
-                </tr>
-            </tfoot>
-        </table>
+        <div class="tabela-container">
+            <table id="tabela-orcamentos">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Nome</th>
+                        <th>Telefone</th>
+                        <th>Retirada</th>
+                        <th>Entrega</th>
+                        <th>Tipo de Moto</th>
+                        <th>KM Total</th>
+                        <th>Valor</th>
+                        <th>Custo</th>
+                        <th>Lucro</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="lista-orcamentos">
+                    <tr><td colspan="11" style="text-align: center; color: #999;">Nenhum orçamento recebido ainda.</td></tr>
+                </tbody>
+                <tfoot>
+                    <tr class="total-row">
+                        <td colspan="6">TOTAIS</td>
+                        <td id="total-valor">R$ 0,00</td>
+                        <td id="total-custo">R$ 0,00</td>
+                        <td id="total-lucro">R$ 0,00</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="acoes-container">
+            <button class="btn-pdf" onclick="exportarOrcamentosPDF()">📄 Exportar Orçamentos (PDF)</button>
+            <button onclick="excluirTodosOrcamentos()" class="btn-excluir" style="padding: 10px 20px; font-size: 14px;">🗑️ Excluir Todos os Orçamentos</button>
+        </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- ABA 3: OFICINAS PARCEIRAS                   -->
-    <!-- ============================================ -->
+    <!-- ABA 3: OFICINAS E PARCERIAS -->
     <div id="aba-oficinas" class="tab-content">
-        <h3>🔧 Cadastro de Oficinas Parceiras</h3>
+        <h3>🔧 Oficinas e Parcerias</h3>
         
         <div class="config-group">
+            <h3>Cadastro de Oficinas</h3>
             <label>Nome da Oficina</label>
             <input type="text" id="oficina_nome" placeholder="Ex: Oficina do João">
             
@@ -259,31 +293,35 @@
             <label>Especialidade</label>
             <input type="text" id="oficina_especialidade" placeholder="Ex: Motos, Elétrica...">
             
+            <label>Chave Pix da Oficina</label>
+            <input type="text" id="oficina_pix" placeholder="CPF, CNPJ, E-mail, Telefone ou Aleatória">
+            
             <button class="btn-salvar" onclick="cadastrarOficina()">Cadastrar Oficina</button>
         </div>
 
         <h3>📌 Oficinas Cadastradas</h3>
-        <table>
+        <table id="tabela-oficinas">
             <thead>
                 <tr>
                     <th>Nome</th>
                     <th>Endereço</th>
                     <th>Telefone</th>
                     <th>Especialidade</th>
+                    <th>Pix</th>
                     <th>Ações</th>
                 </tr>
             </thead>
             <tbody id="lista-oficinas">
-                <tr>
-                    <td colspan="5" style="text-align: center; color: #999;">Nenhuma oficina cadastrada.</td>
-                </tr>
+                <tr><td colspan="6" style="text-align: center; color: #999;">Nenhuma oficina cadastrada.</td></tr>
             </tbody>
         </table>
+
+        <div class="acoes-container">
+            <button class="btn-pdf" onclick="exportarOficinasPDF()">📄 Exportar Oficinas (PDF)</button>
+        </div>
     </div>
 
-    <!-- ============================ -->
-    <!-- LOCALIZAÇÃO E STATUS        -->
-    <!-- ============================ -->
+    <!-- LOCALIZAÇÃO E STATUS -->
     <div style="margin-top: 30px;">
         <section class="card">
             <h2>📍 Localização Atual (APK)</h2>
@@ -318,30 +356,20 @@
 
 </div>
 
-<!-- ============================ -->
-<!-- SCRIPTS                     -->
-<!-- ============================ -->
 <script>
-    // Função para alternar entre as abas
     function abrirAba(idAba, botao) {
-        // Esconde todas as abas
         document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-        // Remove a classe ativa de todos os botões
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        
-        // Mostra a aba clicada e ativa o botão
         document.getElementById(idAba).classList.add('active');
         botao.classList.add('active');
     }
 
-    // Função para carregar os valores salvos no localStorage
     function carregarConfiguracoes() {
         const campos = [
             'preco_00_05', 'preco_05_0830', 'preco_0831_14', 'preco_14_18', 
             'preco_18_20', 'preco_20_22', 'preco_22_2359',
             'gasolina', 'consumo', 'depreciacao', 'manutencao'
         ];
-        
         campos.forEach(id => {
             const valor = localStorage.getItem(id);
             const input = document.getElementById(id);
@@ -349,7 +377,6 @@
         });
     }
 
-    // Função para salvar os preços por horário
     function salvarPrecosHorarios() {
         const campos = ['preco_00_05', 'preco_05_0830', 'preco_0831_14', 'preco_14_18', 'preco_18_20', 'preco_20_22', 'preco_22_2359'];
         campos.forEach(id => {
@@ -360,7 +387,6 @@
         alert("✅ Preços por horário salvos com sucesso!");
     }
 
-    // Função para salvar os custos operacionais
     function salvarCustosOperacionais() {
         const campos = ['gasolina', 'consumo', 'depreciacao', 'manutencao'];
         campos.forEach(id => {
@@ -371,35 +397,31 @@
         alert("✅ Custos operacionais salvos com sucesso!");
     }
 
-    // Função para carregar as oficinas do localStorage
     function carregarOficinas() {
         const oficinas = JSON.parse(localStorage.getItem('oficinas_parceiras') || '[]');
         const tbody = document.getElementById('lista-oficinas');
-        
         if (oficinas.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999;">Nenhuma oficina cadastrada.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">Nenhuma oficina cadastrada.</td></tr>';
             return;
         }
-
         tbody.innerHTML = oficinas.map((oficina, index) => `
             <tr>
                 <td>${oficina.nome}</td>
                 <td>${oficina.endereco}</td>
                 <td>${oficina.telefone}</td>
                 <td>${oficina.especialidade}</td>
-                <td>
-                    <button onclick="excluirOficina(${index})" style="color: red; background: none; border: none; cursor: pointer;">🗑️ Excluir</button>
-                </td>
+                <td>${oficina.pix || '--'}</td>
+                <td><button onclick="excluirOficina(${index})" style="color: red; background: none; border: none; cursor: pointer;">🗑️ Excluir</button></td>
             </tr>
         `).join('');
     }
 
-    // Função para cadastrar uma oficina
-    function cadastrarOficina() {
+    async function cadastrarOficina() {
         const nome = document.getElementById('oficina_nome').value;
         const endereco = document.getElementById('oficina_endereco').value;
         const telefone = document.getElementById('oficina_telefone').value;
         const especialidade = document.getElementById('oficina_especialidade').value;
+        const pix = document.getElementById('oficina_pix').value;
 
         if (!nome || !endereco || !telefone) {
             alert("Preencha pelo menos Nome, Endereço e Telefone.");
@@ -407,20 +429,22 @@
         }
 
         const oficinas = JSON.parse(localStorage.getItem('oficinas_parceiras') || '[]');
-        oficinas.push({ nome, endereco, telefone, especialidade });
+        oficinas.push({ nome, endereco, telefone, especialidade, pix });
         localStorage.setItem('oficinas_parceiras', JSON.stringify(oficinas));
 
-        // Limpar campos
         document.getElementById('oficina_nome').value = '';
         document.getElementById('oficina_endereco').value = '';
         document.getElementById('oficina_telefone').value = '';
         document.getElementById('oficina_especialidade').value = '';
+        document.getElementById('oficina_pix').value = '';
 
         carregarOficinas();
-        alert("✅ Oficina cadastrada com sucesso!");
+        
+        // Salvar na API
+        const sucesso = await salvarCloudflare();
+        alert(sucesso ? "✅ Oficina cadastrada e sincronizada!" : "⚠️ Oficina salva apenas no celular.");
     }
 
-    // Função para excluir uma oficina
     function excluirOficina(index) {
         if (!confirm("Tem certeza que deseja excluir esta oficina?")) return;
         const oficinas = JSON.parse(localStorage.getItem('oficinas_parceiras') || '[]');
@@ -429,7 +453,40 @@
         carregarOficinas();
     }
 
-    // Inicialização
+    function exportarOrcamentosPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        doc.setFontSize(18);
+        doc.text("VMW Moto-Reboques - Orçamentos", 14, 20);
+        
+        doc.setFontSize(10);
+        doc.text("Data: " + new Date().toLocaleDateString('pt-BR'), 14, 30);
+        
+        const table = document.getElementById('tabela-orcamentos');
+        doc.autoTable({ html: table, startY: 35, theme: 'grid', styles: { fontSize: 8 } });
+        
+        doc.save('orcamentos_vmw.pdf');
+        alert("✅ PDF de orçamentos gerado!");
+    }
+
+    function exportarOficinasPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        doc.setFontSize(18);
+        doc.text("VMW Moto-Reboques - Oficinas Parceiras", 14, 20);
+        
+        doc.setFontSize(10);
+        doc.text("Data: " + new Date().toLocaleDateString('pt-BR'), 14, 30);
+        
+        const table = document.getElementById('tabela-oficinas');
+        doc.autoTable({ html: table, startY: 35, theme: 'grid', styles: { fontSize: 8 } });
+        
+        doc.save('oficinas_vmw.pdf');
+        alert("✅ PDF de oficinas gerado!");
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
         carregarConfiguracoes();
         carregarOficinas();

@@ -89,6 +89,38 @@
             max-width: 320px;
         }
     }
+#toggle-localizacao {
+    display: none;
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    background: #f0f0f0;
+    color: #333;
+    padding: 8px 15px;
+    border-radius: 50px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 99999;
+    border: 2px solid white;
+    cursor: pointer;
+    align-items: center;
+    gap: 8px;
+}
+#toggle-localizacao.ativo {
+    background: #25D366;
+    color: white;
+    border-color: #25D366;
+}
+#toggle-localizacao .icone {
+    font-size: 16px;
+}
+#toggle-localizacao .status {
+    font-size: 11px;
+    font-weight: 400;
+    opacity: 0.8;
+}    
 </style>
 <style>
     /* ============================================ */
@@ -1082,6 +1114,50 @@ SCRIPT DE ADMIN (ATALHO SECRETO)
             }
         }
     });
+</script>
+<button id="toggle-localizacao" onclick="toggleLocalizacao()">
+    <span class="icone">📍</span>
+    <span id="toggle-texto">Vila Rica</span>
+    <span class="status" id="toggle-status">(fixo)</span>
+</button>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const capacitor = (typeof Capacitor !== 'undefined') ? Capacitor : 
+                          (typeof window.Capacitor !== 'undefined') ? window.Capacitor : null;
+        
+        if (capacitor && capacitor.isNativePlatform()) {
+            const toggle = document.getElementById('toggle-localizacao');
+            if (toggle) {
+                toggle.style.display = 'flex';
+                const modoLocalizacao = localStorage.getItem('modo_localizacao') === 'true';
+                if (modoLocalizacao) {
+                    toggle.classList.add('ativo');
+                    document.getElementById('toggle-texto').innerHTML = 'APK';
+                    document.getElementById('toggle-status').innerHTML = '(atual)';
+                }
+            }
+        }
+    });
+
+    function toggleLocalizacao() {
+        const toggle = document.getElementById('toggle-localizacao');
+        const modoLocalizacao = localStorage.getItem('modo_localizacao') === 'true';
+        const novoModo = !modoLocalizacao;
+        localStorage.setItem('modo_localizacao', novoModo);
+        
+        if (novoModo) {
+            toggle.classList.add('ativo');
+            document.getElementById('toggle-texto').innerHTML = 'APK';
+            document.getElementById('toggle-status').innerHTML = '(atual)';
+        } else {
+            toggle.classList.remove('ativo');
+            document.getElementById('toggle-texto').innerHTML = 'Vila Rica';
+            document.getElementById('toggle-status').innerHTML = '(fixo)';
+        }
+        
+        setTimeout(() => { window.location.reload(); }, 500);
+    }
 </script>
 </body>
 

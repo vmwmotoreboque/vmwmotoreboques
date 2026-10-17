@@ -1,6 +1,6 @@
 //==================================================
-// VMW MOTO-REBOQUES - ADMIN.JS (VERSÃO 10.0.0)
-// CORRIGIDO: SALVA NA API DE FORMA CORRETA
+// VMW MOTO-REBOQUES - ADMIN.JS (VERSÃO 16.1.0)
+// CORRIGIDO: REMOVIDO CAMPO chave_pix (NÃO EXISTE MAIS)
 //==================================================
 
 const SENHA = "vmw2026";
@@ -52,7 +52,6 @@ async function carregarConfiguracoes() {
             statusCloudEl.style.color = "#1ecb5a";
         }
 
-        // Preços por horário
         const camposPrecos = [
             'preco_00_05', 'preco_05_0830', 'preco_0831_14', 'preco_14_18', 
             'preco_18_20', 'preco_20_22', 'preco_22_2359',
@@ -101,7 +100,10 @@ function carregarOrcamentos(orcamentos) {
     if (!tbody) return;
 
     if (!orcamentos || orcamentos.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: #999;">Nenhum orçamento recebido ainda.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: #999;">Nenhum orçamento recebido ainda.</td></tr>';
+        document.getElementById('total-valor').innerHTML = 'R$ 0,00';
+        document.getElementById('total-custo').innerHTML = 'R$ 0,00';
+        document.getElementById('total-lucro').innerHTML = 'R$ 0,00';
         return;
     }
 
@@ -109,7 +111,7 @@ function carregarOrcamentos(orcamentos) {
     let totalCusto = 0;
     let totalLucro = 0;
 
-    tbody.innerHTML = orcamentos.map((orc) => {
+    tbody.innerHTML = orcamentos.map((orc, index) => {
         const valor = parseFloat(orc.valor) || 0;
         const custo = parseFloat(orc.custo) || 0;
         const lucro = parseFloat(orc.lucro) || 0;
@@ -118,9 +120,6 @@ function carregarOrcamentos(orcamentos) {
         totalCusto += custo;
         totalLucro += lucro;
 
-        const statusClass = orc.status === 'executado' ? 'status-executado' : 'status-pendente';
-        const statusText = orc.status === 'executado' ? '✅ Executado' : '⏳ Pendente';
-
         return `
             <tr>
                 <td>${new Date(orc.data).toLocaleDateString('pt-BR')}</td>
@@ -128,11 +127,14 @@ function carregarOrcamentos(orcamentos) {
                 <td>${orc.telefone || '--'}</td>
                 <td>${orc.retirada || '--'}</td>
                 <td>${orc.entrega || '--'}</td>
+                <td>${orc.moto || '--'}</td>
                 <td>${orc.kmTotal || '--'} km</td>
                 <td>R$ ${valor.toFixed(2)}</td>
                 <td>R$ ${custo.toFixed(2)}</td>
                 <td>R$ ${lucro.toFixed(2)}</td>
-                <td class="${statusClass}">${statusText}</td>
+                <td>
+                    <button onclick="excluirOrcamento(${index})" class="btn-excluir">🗑️ Excluir</button>
+                </td>
             </tr>
         `;
     }).join('');
@@ -143,12 +145,66 @@ function carregarOrcamentos(orcamentos) {
 }
 
 //==============================================
-// FUNÇÃO: SALVAR NA API (CORRIGIDA)
+// FUNÇÃO: EXCLUIR ORÇAMENTO
+//==============================================
+
+async function excluirOrcamento(index) {
+    if (!confirm("Tem certeza que deseja excluir este orçamento?")) return;
+    
+    try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        let orcamentos = data.orcamentos || [];
+        
+        if (!orcamentos[index]) {
+            console.error("Orçamento não encontrado no índice:", index);
+            return;
+        }
+        
+        orcamentos.splice(index, 1);
+        
+        await fetch(API_URL + "/orcamentos", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orcamentos: orcamentos })
+        });
+        
+        carregarOrcamentos(orcamentos);
+        alert("✅ Orçamento excluído!");
+    } catch (e) {
+        console.error("Erro ao excluir:", e);
+        alert("❌ Erro ao excluir.");
+    }
+}
+
+//==============================================
+// FUNÇÃO: EXCLUIR TODOS OS ORÇAMENTOS
+//==============================================
+
+async function excluirTodosOrcamentos() {
+    if (!confirm("Tem certeza que deseja excluir TODOS os orçamentos? Esta ação não pode ser desfeita.")) return;
+    
+    try {
+        await fetch(API_URL + "/orcamentos", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orcamentos: [] })
+        });
+        
+        carregarOrcamentos([]);
+        alert("✅ Todos os orçamentos foram excluídos!");
+    } catch (e) {
+        console.error("Erro ao excluir todos:", e);
+        alert("❌ Erro ao excluir.");
+    }
+}
+
+//==============================================
+// FUNÇÃO: SALVAR NA API (CORRIGIDA - SEM chave_pix)
 //==============================================
 
 async function salvarCloudflare() {
     try {
-        // 1. Monta o objeto com os valores atuais
         const config = {
             preco_00_05: document.getElementById('preco_00_05').value,
             preco_05_0830: document.getElementById('preco_05_0830').value,
@@ -166,7 +222,6 @@ async function salvarCloudflare() {
 
         console.log("📤 Enviando para a API:", config);
 
-        // 2. Envia para a API
         const res = await fetch(API_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -181,7 +236,6 @@ async function salvarCloudflare() {
         const resposta = await res.json();
         console.log("✅ Resposta da API:", resposta);
 
-        // 3. Salva no localStorage como backup
         Object.keys(config).forEach(key => {
             if (typeof config[key] === 'string' || typeof config[key] === 'number') {
                 localStorage.setItem(key, config[key]);
@@ -192,12 +246,6 @@ async function salvarCloudflare() {
 
     } catch (e) {
         console.error("❌ Erro ao salvar na API:", e);
-        // Fallback: salva apenas no localStorage
-        const campos = ['preco_00_05', 'preco_05_0830', 'preco_0831_14', 'preco_14_18', 'preco_18_20', 'preco_20_22', 'preco_22_2359', 'gasolina', 'consumo', 'depreciacao', 'manutencao'];
-        campos.forEach(id => {
-            const valor = document.getElementById(id).value;
-            if (valor) localStorage.setItem(id, valor);
-        });
         return false;
     }
 }
@@ -236,7 +284,7 @@ function carregarOficinas() {
     if (!tbody) return;
 
     if (oficinas.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999;">Nenhuma oficina cadastrada.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">Nenhuma oficina cadastrada.</td></tr>';
         return;
     }
 
@@ -246,6 +294,7 @@ function carregarOficinas() {
             <td>${oficina.endereco}</td>
             <td>${oficina.telefone}</td>
             <td>${oficina.especialidade}</td>
+            <td>${oficina.pix || '--'}</td>
             <td><button onclick="excluirOficina(${index})" style="color: red; background: none; border: none; cursor: pointer;">🗑️ Excluir</button></td>
         </tr>
     `).join('');
@@ -256,6 +305,7 @@ async function cadastrarOficina() {
     const endereco = document.getElementById('oficina_endereco').value;
     const telefone = document.getElementById('oficina_telefone').value;
     const especialidade = document.getElementById('oficina_especialidade').value;
+    const pix = document.getElementById('oficina_pix').value;
 
     if (!nome || !endereco || !telefone) {
         alert("Preencha pelo menos Nome, Endereço e Telefone.");
@@ -263,15 +313,18 @@ async function cadastrarOficina() {
     }
 
     const oficinas = JSON.parse(localStorage.getItem('oficinas_parceiras') || '[]');
-    oficinas.push({ nome, endereco, telefone, especialidade });
+    oficinas.push({ nome, endereco, telefone, especialidade, pix });
     localStorage.setItem('oficinas_parceiras', JSON.stringify(oficinas));
 
     document.getElementById('oficina_nome').value = '';
     document.getElementById('oficina_endereco').value = '';
     document.getElementById('oficina_telefone').value = '';
     document.getElementById('oficina_especialidade').value = '';
+    document.getElementById('oficina_pix').value = '';
 
     carregarOficinas();
+    
+    // Salvar na API
     const sucesso = await salvarCloudflare();
     alert(sucesso ? "✅ Oficina cadastrada e sincronizada!" : "⚠️ Oficina salva apenas no celular.");
 }
@@ -396,7 +449,7 @@ document.addEventListener("DOMContentLoaded", () => {
         telaLogin.style.display = "flex";
         painel.style.display = "none";
     }
-    console.log("✅ ADMIN.JS CARREGADO (VERSÃO 10.0.0)");
+    console.log("✅ ADMIN.JS CARREGADO (VERSÃO 16.1.0)");
 });
 
 setInterval(carregarConfiguracoes, 30000);
