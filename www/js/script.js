@@ -1,6 +1,6 @@
 //==================================================
-// VMW MOTO-REBOQUES - SCRIPT.JS (VERSÃO 8.0.0)
-// COM TOGGLE DE LOCALIZAÇÃO (APK vs VILA RICA)
+// VMW MOTO-REBOQUES - SCRIPT.JS (VERSÃO 8.2.0)
+// CORRIGIDO: TOGGLE DE LOCALIZAÇÃO (LEITURA GARANTIDA)
 //==================================================
 
 const API_KEY = "1c1bd45c2e5a431b8e45a47d2c57d950";
@@ -9,13 +9,13 @@ const API_URL = "https://vmw-config-api.vmwreboques.workers.dev";
 const BASE_LAT = -19.903006;
 const BASE_LNG = -43.980724;
 
-const GPS_INTERVALO = 30000; // 30 segundos (mantido)
+const GPS_INTERVALO = 30000;
 
 //==============================================
 // FORÇAR RECARGA DE CONFIGURAÇÕES
 //==============================================
 
-const VERSAO_SISTEMA = "8.0.0"; 
+const VERSAO_SISTEMA = "8.3.2"; 
 const versaoAtual = localStorage.getItem("vmw_versao");
 
 if (versaoAtual !== VERSAO_SISTEMA) {
@@ -66,7 +66,27 @@ const whatsapp = document.getElementById("enviarWhatsapp");
 //==============================================
 
 function isModoAPK() {
-    return localStorage.getItem('modo_localizacao') === 'true';
+    // A chave principal tem prioridade. Se ainda não houver escolha salva,
+    // o sistema tenta usar o GPS recente do APK automaticamente.
+    const modo1 = localStorage.getItem("modo_localizacao");
+    const modo2 = localStorage.getItem("modoLocalizacao");
+    const modo3 = localStorage.getItem("modo");
+
+    let modo;
+    if (modo1 !== null) {
+        modo = modo1 === "true";
+    } else if (modo2 !== null) {
+        modo = modo2 === "true";
+    } else if (modo3 !== null) {
+        modo = modo3 === "true";
+    } else {
+        // Primeira utilização: tentar GPS do APK; se não estiver recente,
+        // carregarLocalizacaoAPK informará o problema em vez de usar GPS velho.
+        modo = true;
+    }
+
+    console.log("📍 Modo de localização escolhido:", modo ? "APK" : "Vila Rica (fixo)");
+    return modo;
 }
 
 //==============================================
@@ -126,39 +146,71 @@ async function carregarConfiguracoes() {
 }
 
 async function carregarLocalizacaoAPK() {
-    // Se o modo APK estiver desligado, usa a Vila Rica
+    // Se o modo fixo foi selecionado, preserve o comportamento anterior.
     if (!isModoAPK()) {
         console.log("🏠 Modo Vila Rica ativado (localização fixa)");
         return [BASE_LAT, BASE_LNG];
     }
-    
-    // Modo APK: busca a localização atual
+
+    // O site deve continuar calculando mesmo quando o APK estiver fechado.
+    // Nesse caso, usa a base Vila Rica como alternativa, sem bloquear o orçamento.
     try {
-        const res = await fetch(API_URL);
-        if (res.ok) {
-            const config = await res.json();
-            const lat = parseFloat(config.latitude);
-            const lng = parseFloat(config.longitude);
-            if (!isNaN(lat) && !isNaN(lng)) {
-                console.log("📍 Localização do APK (API):", lat, lng);
-                localStorage.setItem("latitude", lat);
-                localStorage.setItem("longitude", lng);
-                return [lat, lng];
-            }
+        console.log("📍 Modo APK: consultando GPS no Worker...");
+
+        const res = await fetch(API_URL, { cache: "no-store" });
+        if (!res.ok) throw new Error("O Worker não respondeu corretamente.");
+
+        const config = await res.json();
+        const lat = Number(config.latitude);
+        const lng = Number(config.longitude);
+        let gpsTimestamp = Number(config.gpsAtualizadoEm);
+
+        // Aceita timestamp em segundos ou milissegundos.
+        if (Number.isFinite(gpsTimestamp) && gpsTimestamp > 0 && gpsTimestamp < 1e12) {
+            gpsTimestamp *= 1000;
         }
-    } catch (e) {
-        console.warn("⚠️ Não foi possível carregar localização da API:", e);
-    }
 
-    const latLocal = parseFloat(localStorage.getItem("latitude"));
-    const lngLocal = parseFloat(localStorage.getItem("longitude"));
-    if (!isNaN(latLocal) && !isNaN(lngLocal)) {
-        console.log("📍 Localização do APK (LocalStorage):", latLocal, lngLocal);
-        return [latLocal, lngLocal];
-    }
+        if (
+            !Number.isFinite(lat) || !Number.isFinite(lng) ||
+            lat < -90 || lat > 90 || lng < -180 || lng > 180
+        ) {
+            throw new Error("O Worker não tem coordenadas GPS válidas.");
+        }
 
-    console.log("📍 Usando Base (Vila Rica) como fallback");
-    return [BASE_LAT, BASE_LNG];
+        if (!Number.isFinite(gpsTimestamp) || gpsTimestamp <= 0) {
+            throw new Error("O Worker não informou o horário da última atualização do GPS.");
+        }
+
+        const idadeGPS = Date.now() - gpsTimestamp;
+        const idadeMaxima = 2 * 60 * 1000;
+
+        console.log("🛰️ GPS recebido do Worker:", {
+            latitude: lat,
+            longitude: lng,
+            atualizadoEm: new Date(gpsTimestamp).toLocaleString(),
+            idadeSegundos: Math.round(idadeGPS / 1000),
+            status: config.status
+        });
+
+        if (idadeGPS < -30000 || idadeGPS > idadeMaxima) {
+            throw new Error("GPS antigo; será usada a base Vila Rica como alternativa.");
+        }
+
+        if (config.status && config.status !== "online") {
+            throw new Error("APK offline; será usada a base Vila Rica como alternativa.");
+        }
+
+        localStorage.setItem("latitude", String(lat));
+        localStorage.setItem("longitude", String(lng));
+        localStorage.setItem("ultimaAtualizacaoGPS", String(gpsTimestamp));
+
+        console.log("✅ Usando GPS atual do APK como origem do reboque.");
+        return [lat, lng];
+    } catch (erro) {
+        console.warn("⚠️ GPS do APK indisponível ou desatualizado:", erro.message);
+        console.warn("🏠 Alternativa ativada: usando base fixa Vila Rica para permitir o orçamento.");
+        return [BASE_LAT, BASE_LNG];
+    }
 }
 
 function obterFaixaHorario() {
@@ -189,20 +241,152 @@ function obterFaixaHorario() {
 // FUNÇÕES DE CÁLCULO
 //==============================================
 
+
+
+function normalizarTexto(texto) {
+    return String(texto || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
 async function buscarCoordenadas(endereco) {
-    const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(endereco)}&limit=1&lang=pt&apiKey=${API_KEY}`;
-    const res = await fetch(url);
-    const dados = await res.json();
-    if (!dados.features || dados.features.length === 0) throw new Error("Endereço não encontrado: " + endereco);
-    const coords = dados.features[0].geometry.coordinates;
-    return [coords[1], coords[0]];
+    const texto = String(endereco || "").trim();
+
+    if (!texto) {
+        throw new Error("Informe o endereço completo.");
+    }
+
+    // 1. Prioriza as coordenadas exatas escolhidas no autocomplete.
+    const campo = [...document.querySelectorAll("input")]
+        .find(el => el.value.trim() === texto && el.dataset.lat && el.dataset.lon);
+
+    if (campo) {
+        const lat = Number(campo.dataset.lat);
+        const lon = Number(campo.dataset.lon);
+
+        if (Number.isFinite(lat) && Number.isFinite(lon)) {
+            console.log("📍 Coordenadas selecionadas no autocomplete:", {
+                endereco: texto,
+                latitude: lat,
+                longitude: lon
+            });
+
+            return [lat, lon];
+        }
+    }
+
+    // 2. Se não houve seleção no autocomplete, pesquisa o endereço.
+    const url =
+        `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(texto)}` +
+        `&limit=5&lang=pt&filter=countrycode:br` +
+        `&bias=proximity:-43.94,-19.92&apiKey=${API_KEY}`;
+
+    const resposta = await fetch(url);
+
+    if (!resposta.ok) {
+        throw new Error(`Erro ao pesquisar endereço (${resposta.status}).`);
+    }
+
+    const dados = await resposta.json();
+
+    if (!dados.features || dados.features.length === 0) {
+        throw new Error("Endereço não encontrado: " + texto);
+    }
+
+    const solicitado = normalizarTexto(texto);
+    const pedeBH =
+        solicitado.includes("belo horizonte") ||
+        /\bbh\b/.test(solicitado);
+
+    // Não aceita Juiz de Fora quando o pedido é Belo Horizonte.
+    let resultado = dados.features.find(item => {
+        const p = item.properties || {};
+        const cidade = normalizarTexto(p.city || p.municipality || "");
+        const formatado = normalizarTexto(p.formatted || "");
+
+        if (pedeBH) {
+            return cidade === "belo horizonte" ||
+                formatado.includes("belo horizonte");
+        }
+
+        return true;
+    });
+
+    if (!resultado) {
+        console.error("❌ Cidade incompatível com o endereço solicitado:", {
+            enderecoSolicitado: texto,
+            resultados: dados.features.map(item => item.properties?.formatted)
+        });
+
+        throw new Error(
+            "O endereço foi localizado em outra cidade. " +
+            "Confira o endereço e selecione uma opção correta na lista."
+        );
+    }
+
+    const props = resultado.properties;
+    const coords = resultado.geometry.coordinates;
+    const longitude = Number(coords[0]);
+    const latitude = Number(coords[1]);
+
+    if (
+        !Number.isFinite(latitude) ||
+        !Number.isFinite(longitude) ||
+        latitude < -90 || latitude > 90 ||
+        longitude < -180 || longitude > 180
+    ) {
+        throw new Error("A API retornou coordenadas inválidas.");
+    }
+
+    console.log("📍 ENDEREÇO SOLICITADO:", texto);
+    console.log("📍 ENDEREÇO ENCONTRADO:", props.formatted);
+    console.log("📍 CIDADE ENCONTRADA:", props.city || props.municipality || "Não informada");
+    console.log("📍 COORDENADAS:", { latitude, longitude });
+
+    return [latitude, longitude];
 }
 
 async function calcularRota(origem, destino) {
-    const url = `https://api.geoapify.com/v1/routing?waypoints=${origem[0]},${origem[1]}|${destino[0]},${destino[1]}&mode=drive&apiKey=${API_KEY}`;
+    const url =
+        `https://api.geoapify.com/v1/routing?waypoints=${origem[0]},${origem[1]}|${destino[0]},${destino[1]}&mode=drive&apiKey=${API_KEY}`;
+
     const res = await fetch(url);
+
+    if (!res.ok) {
+        throw new Error(
+            `Erro no serviço de rotas (${res.status}).`
+        );
+    }
+
     const dados = await res.json();
-    if (!dados.features) throw new Error("Erro ao calcular rota.");
+
+    if (!dados.features || dados.features.length === 0) {
+        throw new Error("O serviço não encontrou uma rota válida.");
+    }
+
+    const propriedades = dados.features[0].properties;
+    const distancia = Number(propriedades.distance);
+    const tempo = Number(propriedades.time);
+
+    if (
+        !Number.isFinite(distancia) ||
+        distancia <= 0 ||
+        !Number.isFinite(tempo) ||
+        tempo <= 0
+    ) {
+        throw new Error("O serviço retornou uma rota com dados inválidos.");
+    }
+
+    console.log("🛣️ ROTA CALCULADA:", {
+        origem,
+        destino,
+        distanciaKm: (distancia / 1000).toFixed(2),
+        tempoMinutos: (tempo / 60).toFixed(1)
+    });
+
     return dados;
 }
 
@@ -365,36 +549,97 @@ async function calcularOrcamento() {
 // AUTOCOMPLETE
 //==============================================
 
-function configurarAutocomplete(campoId, listaId) {
+
+async function configurarAutocomplete(campoId, listaId) {
     const campo = document.getElementById(campoId);
     const lista = document.getElementById(listaId);
+
+    if (!campo || !lista) {
+        console.error("Campo ou lista de autocomplete não encontrados:", campoId, listaId);
+        return;
+    }
+
     let timeout = null;
+
     campo.addEventListener("input", () => {
+        // Ao digitar novamente, invalida as coordenadas da seleção anterior.
+        delete campo.dataset.lat;
+        delete campo.dataset.lon;
+
         clearTimeout(timeout);
+
         const texto = campo.value.trim();
-        if (texto.length < 3) { lista.style.display = "none"; return; }
+
+        if (texto.length < 3) {
+            lista.style.display = "none";
+            return;
+        }
+
         timeout = setTimeout(async () => {
             try {
-                const url = `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(texto)}&limit=5&lang=pt&apiKey=${API_KEY}`;
-                const res = await fetch(url);
-                const dados = await res.json();
+                const url =
+                    `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(texto)}` +
+                    `&limit=5&lang=pt&filter=countrycode:br` +
+                    `&bias=proximity:-43.94,-19.92&apiKey=${API_KEY}`;
+
+                const resposta = await fetch(url);
+
+                if (!resposta.ok) {
+                    throw new Error(`Erro no autocomplete (${resposta.status}).`);
+                }
+
+                const dados = await resposta.json();
                 lista.innerHTML = "";
-                if (!dados.features || dados.features.length === 0) { lista.style.display = "none"; return; }
+
+                if (!dados.features || dados.features.length === 0) {
+                    lista.style.display = "none";
+                    return;
+                }
+
                 dados.features.forEach(local => {
                     const item = document.createElement("div");
                     item.className = "item-endereco";
-                    item.innerHTML = "📍 " + local.properties.formatted;
-                    item.onclick = () => { campo.value = local.properties.formatted; lista.style.display = "none"; };
+                    item.textContent = "📍 " + local.properties.formatted;
+
+                    item.addEventListener("click", () => {
+                        const coords = local.geometry.coordinates;
+
+                        campo.value = local.properties.formatted;
+                        campo.dataset.lat = String(coords[1]);
+                        campo.dataset.lon = String(coords[0]);
+
+                        lista.style.display = "none";
+
+                        console.log("✅ Endereço selecionado:", {
+                            endereco: campo.value,
+                            cidade: local.properties.city || local.properties.municipality || "",
+                            latitude: campo.dataset.lat,
+                            longitude: campo.dataset.lon
+                        });
+                    });
+
                     lista.appendChild(item);
                 });
+
                 lista.style.display = "block";
-            } catch (e) { console.error("Autocomplete:", e); }
+            } catch (erro) {
+                console.error("Erro no autocomplete:", erro);
+                lista.style.display = "none";
+            }
         }, 300);
+    });
+
+    // Fecha a lista ao clicar fora do campo e das sugestões.
+    document.addEventListener("click", evento => {
+        if (!campo.contains(evento.target) && !lista.contains(evento.target)) {
+            lista.style.display = "none";
+        }
     });
 }
 
+
 //==============================================
-// GPS - APENAS PARA O APK (ENVIA A CADA 30 SEGUNDOS)
+// GPS - APENAS PARA O APK
 //==============================================
 
 function obterGeolocation() {
@@ -419,7 +664,9 @@ async function enviarPosicao(position) {
             precisao: c.accuracy || 0,
             altitude: c.altitude || 0,
             status: "online",
-            cidade: localStorage.getItem('cidade') || 'Belo Horizonte'
+            cidade: localStorage.getItem('cidade') || 'Belo Horizonte',
+            gpsAtualizadoEm: Date.now()
+            
         };
 
         console.log("📤 Enviando GPS para a API:", config);
@@ -518,7 +765,7 @@ async function iniciarRastreamento() {
 document.addEventListener("DOMContentLoaded", async () => {
     try {
         console.log("🚀 Inicializando VMW Moto-Reboques...");
-        console.log("🚀 VERSÃO 8.0.0 - TOGGLE DE LOCALIZAÇÃO");
+        console.log("🚀 VERSÃO 8.3.2 - FALLBACK VILA RICA QUANDO APK OFFLINE");
 
         await carregarConfiguracoes();
         console.log("✅ Configurações carregadas");

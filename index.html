@@ -1100,21 +1100,8 @@ SCRIPT DE ADMIN (ATALHO SECRETO)
 <a href="admin.html" id="btn-admin-apk">
     ⚙️ Admin
 </a>
-<script>
-    // Mostra o botão Admin apenas se for o APK (Capacitor)
-    document.addEventListener("DOMContentLoaded", () => {
-        const capacitor = (typeof Capacitor !== 'undefined') ? Capacitor : 
-                          (typeof window.Capacitor !== 'undefined') ? window.Capacitor : null;
-        
-        if (capacitor && capacitor.isNativePlatform()) {
-            const btnAdmin = document.getElementById("btn-admin-apk");
-            if (btnAdmin) {
-                btnAdmin.style.display = "block";
-                console.log("✅ Botão Admin ativado (APK)");
-            }
-        }
-    });
-</script>
+
+<!-- BOTÃO TOGGLE DE LOCALIZAÇÃO (SÓ APARECE NO APK) -->
 <button id="toggle-localizacao" onclick="toggleLocalizacao()">
     <span class="icone">📍</span>
     <span id="toggle-texto">Vila Rica</span>
@@ -1122,43 +1109,70 @@ SCRIPT DE ADMIN (ATALHO SECRETO)
 </button>
 
 <script>
+    // Mostra o botão Admin e o Toggle apenas se for o APK
     document.addEventListener("DOMContentLoaded", () => {
         const capacitor = (typeof Capacitor !== 'undefined') ? Capacitor : 
                           (typeof window.Capacitor !== 'undefined') ? window.Capacitor : null;
         
         if (capacitor && capacitor.isNativePlatform()) {
+            // Mostra o botão Admin
+            const btnAdmin = document.getElementById("btn-admin-apk");
+            if (btnAdmin) {
+                btnAdmin.style.display = "block";
+                console.log("✅ Botão Admin ativado (APK)");
+            }
+
+            // Mostra o botão Toggle
             const toggle = document.getElementById('toggle-localizacao');
             if (toggle) {
                 toggle.style.display = 'flex';
-                const modoLocalizacao = localStorage.getItem('modo_localizacao') === 'true';
-                if (modoLocalizacao) {
+                const modoLocalizacao = localStorage.getItem('modo_localizacao');
+                console.log("🔍 Estado do toggle ao carregar:", modoLocalizacao);
+                
+                if (modoLocalizacao === 'true') {
                     toggle.classList.add('ativo');
                     document.getElementById('toggle-texto').innerHTML = 'APK';
                     document.getElementById('toggle-status').innerHTML = '(atual)';
+                } else {
+                    toggle.classList.remove('ativo');
+                    document.getElementById('toggle-texto').innerHTML = 'Vila Rica';
+                    document.getElementById('toggle-status').innerHTML = '(fixo)';
                 }
+                
+                // Adiciona o event listener para o clique
+                toggle.addEventListener('click', function() {
+                    console.log("👆 Botão de toggle clicado!");
+                    
+                    const modoAtual = localStorage.getItem('modo_localizacao') === 'true';
+                    const novoModo = !modoAtual;
+                    
+                    // Salva no localStorage
+                    localStorage.setItem('modo_localizacao', novoModo ? 'true' : 'false');
+                    localStorage.setItem('modoLocalizacao', novoModo ? 'true' : 'false');
+                    localStorage.setItem('modo', novoModo ? 'true' : 'false');
+                    
+                    console.log("🔄 Novo modo salvo:", novoModo);
+                    console.log("📦 Valor no localStorage:", localStorage.getItem('modo_localizacao'));
+                    
+                    if (novoModo) {
+                        toggle.classList.add('ativo');
+                        document.getElementById('toggle-texto').innerHTML = 'APK';
+                        document.getElementById('toggle-status').innerHTML = '(atual)';
+                    } else {
+                        toggle.classList.remove('ativo');
+                        document.getElementById('toggle-texto').innerHTML = 'Vila Rica';
+                        document.getElementById('toggle-status').innerHTML = '(fixo)';
+                    }
+                    
+                    // Recarrega a página para aplicar o novo modo
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
+                });
             }
         }
     });
-
-    function toggleLocalizacao() {
-        const toggle = document.getElementById('toggle-localizacao');
-        const modoLocalizacao = localStorage.getItem('modo_localizacao') === 'true';
-        const novoModo = !modoLocalizacao;
-        localStorage.setItem('modo_localizacao', novoModo);
-        
-        if (novoModo) {
-            toggle.classList.add('ativo');
-            document.getElementById('toggle-texto').innerHTML = 'APK';
-            document.getElementById('toggle-status').innerHTML = '(atual)';
-        } else {
-            toggle.classList.remove('ativo');
-            document.getElementById('toggle-texto').innerHTML = 'Vila Rica';
-            document.getElementById('toggle-status').innerHTML = '(fixo)';
-        }
-        
-        setTimeout(() => { window.location.reload(); }, 500);
-    }
-</script>
+    </script>
 </body>
 
-</html> 
+</html>
